@@ -1,8 +1,3 @@
-declare module "*.yaml" {
-  const content: string;
-  export default content;
-}
-
 declare global {
   interface Window {
     moment(inp?: moment.MomentInput, strict?: boolean): moment.Moment;
@@ -10,3 +5,5 @@ declare global {
     moment(inp?: moment.MomentInput, format?: moment.MomentFormatSpecification, language?: string, strict?: boolean): moment.Moment;
   }
 }
+
+export {};
