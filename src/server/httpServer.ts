@@ -5,8 +5,7 @@ import responseTime from "response-time";
 import forge from "node-forge";
 import { SUPPORTED_PROTOCOL_VERSIONS } from "@modelcontextprotocol/sdk/types.js";
 
-import { McpHandler } from "../mcpHandler";
-import { VaultOperations } from "../vaultOperations";
+import { McpHandler } from "../mcp/handler";
 import {
   CERT_NAME,
   MaximumRequestSize,
@@ -25,17 +24,15 @@ import {
 export default class HttpServer {
   readonly api: express.Express;
   readonly mcpHandler: McpHandler;
-  private readonly operations: VaultOperations;
 
   constructor(
-    app: App,
+    _app: App,
     private readonly manifest: PluginManifest,
     private readonly settings: LocalRestApiSettings,
   ) {
     this.api = express();
     this.api.set("json spaces", 2);
-    this.operations = new VaultOperations(app);
-    this.mcpHandler = new McpHandler(this.operations, this.settings);
+    this.mcpHandler = new McpHandler(this.manifest, this.settings);
   }
 
   setupRouter(): void {
