@@ -67,12 +67,11 @@ export class McpHandler {
     return { server, toolHandles };
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private tool(
     name: string,
     description: string,
-    schema: any,
-    callback: (args: any) => Promise<CallToolResult>,
+    schema: unknown,
+    callback: (args: unknown) => Promise<CallToolResult>,
   ): { remove: () => void } {
     const spec: ToolSpec = {
       name,

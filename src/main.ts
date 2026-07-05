@@ -262,6 +262,7 @@ class AiMemoryStoreSettingTab extends PluginSettingTab {
 
     containerEl.empty();
     containerEl.classList.add("obsidian-local-rest-api-settings");
+    // eslint-disable-next-line obsidianmd/ui/sentence-case -- product name
     new Setting(containerEl).setHeading().setName("AI Memory Store");
     new Setting(containerEl).setHeading().setName("MCP connection");
 
@@ -269,6 +270,7 @@ class AiMemoryStoreSettingTab extends PluginSettingTab {
     apiKeyDiv.classList.add("api-key-display");
 
     apiKeyDiv.createEl("p", {
+      // eslint-disable-next-line obsidianmd/ui/sentence-case -- MCP is a proper acronym
       text: "Connect AI clients to the MCP server using the endpoints below.",
     });
 

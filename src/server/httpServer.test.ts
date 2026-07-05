@@ -129,7 +129,11 @@ async function invoke(
     } as unknown as express.Response;
 
     app.handle(req, res, (err: unknown) => {
-      if (err) reject(err);
+      if (err instanceof Error) {
+        reject(err);
+      } else if (err !== undefined) {
+        reject(new Error(typeof err === "string" ? err : "Request failed"));
+      }
     });
   });
 }

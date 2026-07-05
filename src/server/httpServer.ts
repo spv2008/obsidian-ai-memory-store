@@ -77,8 +77,8 @@ export default class HttpServer {
       next();
     });
     mcpRouter.use(express.json({ limit: MaximumRequestSize }));
-    mcpRouter.all("/", async (req, res) => {
-      await this.mcpHandler.handleRequest(req, res);
+    mcpRouter.all("/", (req, res) => {
+      void this.mcpHandler.handleRequest(req, res);
     });
     this.api.use("/mcp", mcpRouter);
 
