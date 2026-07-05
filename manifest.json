@@ -1,9 +1,9 @@
 {
-	"id": "obsidian-local-rest-api",
-	"name": "Local REST API with MCP",
-	"version": "4.1.3",
+	"id": "obsidian-ai-memory-store",
+	"name": "AI Memory Store",
+	"version": "0.1.0",
 	"minAppVersion": "1.4.0",
-	"description": "A secure REST API and Model Context Protocol (MCP) server for your vault.",
+	"description": "MCP server for AI agent memory — structured Obsidian vault recall and persistence.",
 	"author": "Adam Coddington",
 	"authorUrl": "https://adamcoddington.net/",
 	"isDesktopOnly": true

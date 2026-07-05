@@ -1,7 +1,7 @@
 {
-  "name": "obsidian-local-rest-api",
-  "version": "4.1.3",
-  "description": "A secure REST API and Model Context Protocol (MCP) server for Obsidian.",
+  "name": "obsidian-ai-memory-store",
+  "version": "0.1.0",
+  "description": "MCP server for AI agent memory — structured Obsidian vault recall and persistence.",
   "main": "main.js",
   "types": "main.d.ts",
   "scripts": {
