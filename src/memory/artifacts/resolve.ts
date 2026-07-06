@@ -1,13 +1,7 @@
 import { posix } from "path";
 
-import {
-  architecturePath,
-  manualTestInsomniaPath,
-  manualTestPlanPath,
-  planFolderPath,
-  specificationPath,
-} from "../paths";
-import { ARTIFACT_FILES, PHASE_FILE_PATTERN } from "../schema";
+import { manualTestInsomniaPath, manualTestPlanPath } from "../paths";
+import { ARTIFACT_FILES, ARTIFACT_ROOTS, PHASE_FILE_PATTERN } from "../schema";
 import { extractFeatureSlugFromFolderName, folderMatchesTaskId } from "../parse/taskId";
 
 export interface WorkflowArtifacts {
@@ -43,11 +37,28 @@ function findMatchingFolders(
     }
   }
 
-  return [...folders];
+  return [...folders].sort();
+}
+
+function artifactFileInFolder(
+  root: string,
+  folderName: string,
+  fileName: string,
+): string {
+  return `${root}/${folderName}/${fileName}`;
 }
 
 function pickFirstExisting(paths: string[], allPaths: Set<string>): string | undefined {
   return paths.find((candidate) => allPaths.has(candidate));
+}
+
+function findPlanMasterMatch(paths: string[], taskId: string): string | undefined {
+  return paths.find(
+    (p) =>
+      (p.startsWith(`${ARTIFACT_ROOTS.plans}/${taskId}-`) ||
+        p.startsWith(`${ARTIFACT_ROOTS.plans}/${taskId}/`)) &&
+      p.endsWith(`/${ARTIFACT_FILES.planMaster}`),
+  );
 }
 
 export function resolveWorkflowArtifacts(
@@ -57,9 +68,9 @@ export function resolveWorkflowArtifacts(
   const paths = normalizePaths(allPaths);
   const pathSet = new Set(paths);
 
-  const specFolders = findMatchingFolders(paths, "specifications", taskId);
-  const archFolders = findMatchingFolders(paths, "architecture", taskId);
-  const planFolders = findMatchingFolders(paths, "plans", taskId);
+  const specFolders = findMatchingFolders(paths, ARTIFACT_ROOTS.specifications, taskId);
+  const archFolders = findMatchingFolders(paths, ARTIFACT_ROOTS.architecture, taskId);
+  const planFolders = findMatchingFolders(paths, ARTIFACT_ROOTS.plans, taskId);
 
   const specFolder = specFolders[0];
   const archFolder = archFolders[0];
@@ -73,31 +84,43 @@ export function resolveWorkflowArtifacts(
 
   const specification = specFolder
     ? pickFirstExisting(
-        [specificationPath(taskId, extractFeatureSlugFromFolderName(specFolder, taskId) ?? "")],
+        [
+          artifactFileInFolder(
+            ARTIFACT_ROOTS.specifications,
+            specFolder,
+            ARTIFACT_FILES.specification,
+          ),
+        ],
         pathSet,
       )
     : paths.find(
         (p) =>
-          p.startsWith(`specifications/${taskId}-`) &&
+          (p.startsWith(`${ARTIFACT_ROOTS.specifications}/${taskId}-`) ||
+            p.startsWith(`${ARTIFACT_ROOTS.specifications}/${taskId}/`)) &&
           p.endsWith(`/${ARTIFACT_FILES.specification}`),
       );
 
   const architecture = archFolder
     ? pickFirstExisting(
-        [architecturePath(taskId, extractFeatureSlugFromFolderName(archFolder, taskId) ?? "")],
+        [
+          artifactFileInFolder(
+            ARTIFACT_ROOTS.architecture,
+            archFolder,
+            ARTIFACT_FILES.architecture,
+          ),
+        ],
         pathSet,
       )
     : paths.find(
         (p) =>
-          p.startsWith(`architecture/${taskId}-`) &&
+          (p.startsWith(`${ARTIFACT_ROOTS.architecture}/${taskId}-`) ||
+            p.startsWith(`${ARTIFACT_ROOTS.architecture}/${taskId}/`)) &&
           p.endsWith(`/${ARTIFACT_FILES.architecture}`),
       );
 
-  const planMasterMatch = paths.find(
-    (p) => p.startsWith(`plans/${taskId}-`) && p.endsWith("/master-plan.md"),
-  );
+  const planMasterMatch = findPlanMasterMatch(paths, taskId);
   const resolvedPlanFolder = planFolderName
-    ? planFolderPath(taskId, extractFeatureSlugFromFolderName(planFolderName, taskId) ?? "")
+    ? `${ARTIFACT_ROOTS.plans}/${planFolderName}`
     : planMasterMatch
       ? posix.dirname(planMasterMatch)
       : undefined;

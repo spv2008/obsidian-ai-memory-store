@@ -44,4 +44,27 @@ describe("resolveWorkflowArtifacts", () => {
     expect(result.specification).toBeUndefined();
     expect(result.planPhases).toEqual([]);
   });
+
+  test("resolves artifacts when folder name is exactly the task id", () => {
+    const paths = [
+      "specifications/TASK-42/spec.md",
+      "architecture/TASK-42/proposal.md",
+      "plans/TASK-42/master-plan.md",
+    ];
+    const result = resolveWorkflowArtifacts("TASK-42", paths);
+    expect(result.specification).toBe("specifications/TASK-42/spec.md");
+    expect(result.architecture).toBe("architecture/TASK-42/proposal.md");
+    expect(result.planFolder).toBe("plans/TASK-42");
+    expect(result.planMaster).toBe("plans/TASK-42/master-plan.md");
+    expect(result.featureName).toBeUndefined();
+  });
+
+  test("picks matching folders deterministically when several exist", () => {
+    const paths = [
+      "specifications/TASK-42-zebra/spec.md",
+      "specifications/TASK-42-alpha/spec.md",
+    ];
+    const result = resolveWorkflowArtifacts("TASK-42", paths);
+    expect(result.specification).toBe("specifications/TASK-42-alpha/spec.md");
+  });
 });
