@@ -1,7 +1,4 @@
-// eslint-disable-next-line no-restricted-imports -- Moment type is not re-exported by 'obsidian'; import type causes no runtime bundling
-import type { Moment } from "moment";
 import { FileStats, TFile } from "obsidian";
-import { IPeriodicNoteSettings } from "obsidian-daily-notes-interface";
 
 export enum ErrorCode {
   TextContentEncodingRequired = 40010,
@@ -48,14 +45,6 @@ export interface LocalRestApiSettings {
   bindingHost?: string;
   subjectAltNames?: string;
   enableVerboseLogging?: boolean;
-}
-
-export interface PeriodicNoteInterface {
-  settings: IPeriodicNoteSettings;
-  loaded: boolean;
-  create: (date: Moment) => Promise<TFile>;
-  get: (date: Moment, all: Record<string, TFile>) => TFile;
-  getAll: () => Record<string, TFile>;
 }
 
 declare module "obsidian" {

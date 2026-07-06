@@ -2,7 +2,9 @@ import { ErrorCode, LocalRestApiSettings } from "./types";
 
 export const CERT_NAME = "obsidian-local-rest-api.crt";
 
-export const BUILT_IN_ROUTES = ["/", "/openapi.yaml", `/${CERT_NAME}`];
+export const SERVICE_NAME = "Obsidian AI Memory Store";
+
+export const BUILT_IN_ROUTES = ["/", `/${CERT_NAME}`];
 
 export const DEFAULT_SETTINGS: LocalRestApiSettings = {
   port: 27124,
@@ -12,7 +14,7 @@ export const DEFAULT_SETTINGS: LocalRestApiSettings = {
 
 export const ERROR_CODE_MESSAGES: Record<ErrorCode, string> = {
   [ErrorCode.ApiKeyAuthorizationRequired]:
-    "Authorization required.  Find your API Key in the 'Local REST API with MCP' section of your Obsidian settings.",
+    "Authorization required.  Find your API Key in the 'AI Memory Store' section of your Obsidian settings.",
   [ErrorCode.ContentTypeSpecificationRequired]:
     "Content-Type header required; this API accepts data in multiple content-types and you must indicate the content-type of your request body via the Content-Type header.",
   [ErrorCode.InvalidContentType]:

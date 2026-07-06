@@ -36,52 +36,28 @@ Longer description of what this work is, why these changes were made, and any de
 Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
 ```
 
-## Keeping REST, MCP, and Documentation in Sync
+## Keeping Memory MCP Tools and Documentation in Sync
 
-This project has several parallel representations of each API capability that must be kept consistent. When any one changes, the others must be updated in the same commit.
+Memory Schema v1 (from the `obsidian-memory` skill) is the source of truth for vault layout. MCP tool changes must stay aligned with the skill and README.
 
 | Layer | Files |
 |---|---|
-| REST API implementation | `src/requestHandler.ts` |
-| MCP tool definitions | `src/mcpHandler.ts` |
-| Project Readme | `README.md` |
-| OpenAPI docs (source) | `docs/src/openapi.jsonnet`, `docs/src/lib/descriptions/*.md` |
-| OpenAPI docs (compiled) | `docs/openapi.yaml` |
-| Unit tests | `src/requestHandler.test.ts`, `src/mcpHandler.test.ts` |
-| Integration tests | `src/integration/*.test.ts` |
-
-After making any changes to REST API endpoints or MCP tools, be sure to update the matching OpenAPI docs and Project Readme entries regarding that feature.
-
-### When changing a REST endpoint
-
-Any of the following changes requires updates across multiple layers:
-
-- **New parameter** — add it to the route handler in `src/requestHandler.ts`, add the corresponding Zod field to the matching `mcpServer.tool()` call in `src/mcpHandler.ts`, document it in the relevant Jsonnet source under `docs/src/`, and add test coverage in both the relevant unit test file and the relevant `src/integration/*.test.ts` file.
-- **Removed or renamed parameter** — mirror the removal/rename across all layers.
-- **Changed behavior or response format** — update the OpenAPI description in `docs/src/lib/descriptions/` and the MCP tool description string in `src/mcpHandler.ts` so both REST and MCP clients receive accurate documentation.
-- **New endpoint entirely** — all layers need additions: route handler, MCP tool, Jsonnet operation block, regenerated `docs/openapi.yaml`, and test coverage in both the unit and integration test files.
-
-### Regenerating the compiled OpenAPI spec
-
-`docs/openapi.yaml` is generated from the Jsonnet source and must be regenerated after any change to `docs/src/`:
-
-```
-npm run build-docs
-```
-
-Stage the resulting `docs/openapi.yaml` alongside any Jsonnet changes. `src/mcpHandler.ts` imports this file directly, so a stale compiled spec means MCP clients receive outdated API documentation.
+| MCP tool definitions | `src/mcp/registerTools.ts`, `src/mcp/handler.ts` |
+| Memory domain logic | `src/memory/` (added in later phases) |
+| Project README | `README.md` |
+| Delivery plan | `plans/obsidian-ai-memory-store/` |
+| Unit tests | `src/mcp/handler.test.ts`, `src/server/httpServer.test.ts` |
+| Integration tests | `src/integration/mcp.test.ts` |
 
 ### Checklist
 
-Before marking any endpoint-related change complete:
+Before marking any MCP tool change complete:
 
-- [ ] `src/requestHandler.ts` implements the behavior
-- [ ] `src/mcpHandler.ts` exposes matching parameters and an accurate description
-- [ ] `docs/src/` Jsonnet/Markdown reflects the change
-- [ ] `docs/openapi.yaml` has been regenerated (`npm run build-docs`)
-- [ ] Unit tests in `src/requestHandler.test.ts` and/or `src/mcpHandler.test.ts` cover the changed behavior
-- [ ] Integration tests in `src/integration/` cover the changed behavior
-
+- [ ] Tool registered in `src/mcp/registerTools.ts` (or memory module wired through it)
+- [ ] Unit tests cover the changed behavior
+- [ ] Integration tests updated when MCP tool behavior changes
+- [ ] README tool table updated
+- [ ] `obsidian-memory` skill updated when user-facing workflows change
 
 ## Release Process
 

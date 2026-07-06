@@ -3,7 +3,7 @@ import * as https from "https";
 import * as http from "http";
 import forge, { pki } from "node-forge";
 
-import RequestHandler from "./requestHandler";
+import HttpServer from "./server/httpServer";
 import { LocalRestApiSettings } from "./types";
 
 import {
@@ -17,16 +17,14 @@ import {
   getCertificateIsUptoStandards,
   getCertificateValidityDays,
 } from "./utils";
-import LocalRestApiPublicApi, { ApiVersionUnsupportedError } from "./api";
-export { ApiVersionUnsupportedError } from "./api";
 import { PluginManifest } from "obsidian";
 import { configureHttpServerTimeouts } from "./serverTimeouts";
 
-export default class LocalRestApi extends Plugin {
+export default class AiMemoryStorePlugin extends Plugin {
   settings: LocalRestApiSettings;
   secureServer: https.Server | null = null;
   insecureServer: http.Server | null = null;
-  requestHandler: RequestHandler;
+  httpServer: HttpServer;
   refreshServerState: () => void;
 
   async onload() {
@@ -36,12 +34,12 @@ export default class LocalRestApi extends Plugin {
     );
 
     await this.loadSettings();
-    this.requestHandler = new RequestHandler(
+    this.httpServer = new HttpServer(
       this.app,
       this.manifest,
-      this.settings
+      this.settings,
     );
-    this.requestHandler.setupRouter();
+    this.httpServer.setupRouter();
 
     if (!this.settings.apiKey) {
       this.settings.apiKey = forge.md.sha256
@@ -60,7 +58,7 @@ export default class LocalRestApi extends Plugin {
       const attrs = [
         {
           name: "commonName",
-          value: "Obsidian Local REST API",
+          value: "Obsidian AI Memory Store",
         },
       ];
       const certificate = forge.pki.createCertificate();
@@ -145,25 +143,17 @@ export default class LocalRestApi extends Plugin {
       await this.saveSettings();
     }
 
-    this.addSettingTab(new LocalRestApiSettingTab(this.app, this));
+    this.addSettingTab(new AiMemoryStoreSettingTab(this.app, this));
 
     this.refreshServerState();
 
-    this.app.workspace.trigger("obsidian-local-rest-api:loaded");
+    this.app.workspace.trigger("obsidian-ai-memory-store:loaded");
   }
 
-  getPublicApi(pluginManifest: PluginManifest): LocalRestApiPublicApi {
-    if (!pluginManifest.id || !pluginManifest.name || !pluginManifest.version) {
-      throw new Error(
-        "PluginManifest instance must include a defined id, name, and version to be accempted."
-      );
-    }
-
-    if (this.settings.enableVerboseLogging) {
-      console.debug("[REST API] Added new API extension", pluginManifest);
-    }
-
-    return this.requestHandler.registerApiExtension(pluginManifest);
+  getPublicApi(_pluginManifest: PluginManifest): never {
+    throw new Error(
+      "AI Memory Store does not expose a REST API extension interface.",
+    );
   }
 
   debounce<F extends (...args: unknown[]) => unknown>(
@@ -189,7 +179,7 @@ export default class LocalRestApi extends Plugin {
           key: this.settings.crypto.privateKey,
           cert: this.settings.crypto.cert,
         },
-        this.requestHandler.api
+        this.httpServer.api
       );
       configureHttpServerTimeouts(this.secureServer);
       this.secureServer.listen(
@@ -199,7 +189,7 @@ export default class LocalRestApi extends Plugin {
 
       if (this.settings.enableVerboseLogging) {
         console.debug(
-          `[REST API] Listening on https://${
+          `[AI Memory Store] Listening on https://${
             this.settings.bindingHost ?? DefaultBindingHost
           }:${this.settings.port}/`
         );
@@ -212,7 +202,7 @@ export default class LocalRestApi extends Plugin {
       this.insecureServer = null;
     }
     if (this.settings.enableInsecureServer) {
-      this.insecureServer = http.createServer(this.requestHandler.api);
+      this.insecureServer = http.createServer(this.httpServer.api);
       configureHttpServerTimeouts(this.insecureServer);
       this.insecureServer.listen(
         this.settings.insecurePort,
@@ -221,7 +211,7 @@ export default class LocalRestApi extends Plugin {
 
       if (this.settings.enableVerboseLogging) {
         console.debug(
-          `[REST API] Listening on http://${
+          `[AI Memory Store] Listening on http://${
             this.settings.bindingHost ?? DefaultBindingHost
           }:${this.settings.insecurePort}/`
         );
@@ -249,11 +239,11 @@ export default class LocalRestApi extends Plugin {
   }
 }
 
-class LocalRestApiSettingTab extends PluginSettingTab {
-  plugin: LocalRestApi;
+class AiMemoryStoreSettingTab extends PluginSettingTab {
+  plugin: AiMemoryStorePlugin;
   showAdvancedSettings = false;
 
-  constructor(app: App, plugin: LocalRestApi) {
+  constructor(app: App, plugin: AiMemoryStorePlugin) {
     super(app, plugin);
     this.plugin = plugin;
   }
@@ -271,15 +261,17 @@ class LocalRestApiSettingTab extends PluginSettingTab {
       !getCertificateIsUptoStandards(parsedCertificate);
 
     containerEl.empty();
-    containerEl.classList.add("obsidian-local-rest-api-settings");
-    new Setting(containerEl).setHeading().setName("Local REST API with MCP");
-    new Setting(containerEl).setHeading().setName("How to access via REST");
+    containerEl.classList.add("obsidian-ai-memory-store-settings");
+    // eslint-disable-next-line obsidianmd/ui/sentence-case -- product name
+    new Setting(containerEl).setHeading().setName("AI Memory Store");
+    new Setting(containerEl).setHeading().setName("MCP connection");
 
     const apiKeyDiv = containerEl.createDiv();
     apiKeyDiv.classList.add("api-key-display");
 
     apiKeyDiv.createEl("p", {
-      text: "You can access Obsidian local REST API & MCP server via the following URLs:",
+      // eslint-disable-next-line obsidianmd/ui/sentence-case -- MCP is a proper acronym
+      text: "Connect AI clients to the MCP server using the endpoints below.",
     });
 
     const addUrlRow = (container: HTMLElement, url: string) => {
@@ -305,7 +297,7 @@ class LocalRestApiSettingTab extends PluginSettingTab {
       text: this.plugin.settings.enableSecureServer === false ? "❌" : "✅",
     });
     const secureNameTd = secureTr.createEl("td", { cls: "name" });
-    secureNameTd.createSpan({ text: "Encrypted (HTTPS) API URL" });
+    secureNameTd.createSpan({ text: "Encrypted (HTTPS) server URL" });
     secureNameTd.createEl("br");
     secureNameTd.createEl("br");
     const secureNote = secureNameTd.createEl("i");
@@ -354,7 +346,7 @@ class LocalRestApiSettingTab extends PluginSettingTab {
     insecureTr.createEl("td", {
       text: this.plugin.settings.enableInsecureServer === false ? "❌" : "✅",
     });
-    insecureTr.createEl("td", { cls: "name", text: "Non-encrypted (HTTP) API URL" });
+    insecureTr.createEl("td", { cls: "name", text: "Non-encrypted (HTTP) server URL" });
 
     const insecureUrlsTd = insecureTr.createEl("td", { cls: "url" });
     addUrlRow(insecureUrlsTd, insecureUrl);
@@ -383,18 +375,6 @@ class LocalRestApiSettingTab extends PluginSettingTab {
     apiKeyDiv.createEl("pre", {
       text: `Bearer ${this.plugin.settings.apiKey}`,
     });
-    const seeMore = apiKeyDiv.createEl("p");
-    seeMore.createSpan({
-      text: "Comprehensive documentation of what API endpoints are available can be found in ",
-    });
-    seeMore.createEl("a", {
-      href: "https://coddingtonbear.github.io/obsidian-local-rest-api/",
-      // eslint-disable-next-line obsidianmd/ui/sentence-case
-      text: "the online docs",
-    });
-    seeMore.createSpan({ text: "." });
-
-    new Setting(containerEl).setHeading().setName("How to access via MCP");
 
     const mcpDiv = containerEl.createDiv();
     mcpDiv.classList.add("mcp-display");
@@ -487,7 +467,7 @@ class LocalRestApiSettingTab extends PluginSettingTab {
     const mcpSampleConfig = JSON.stringify(
       {
         mcpServers: {
-          obsidian: {
+          "obsidian-ai-memory-store": {
             type: "http",
             url: mcpSecureUrl,
             headers: {
@@ -507,14 +487,8 @@ class LocalRestApiSettingTab extends PluginSettingTab {
 
     const mcpSeeMore = mcpDiv.createEl("p");
     mcpSeeMore.createSpan({
-      text: "Configuration examples for other MCP clients can be found in ",
+      text: "See the project README for additional MCP client configuration examples.",
     });
-    mcpSeeMore.createEl("a", {
-      href: "https://github.com/coddingtonbear/obsidian-local-rest-api#readme",
-      // eslint-disable-next-line obsidianmd/ui/sentence-case
-      text: "the project readme",
-    });
-    mcpSeeMore.createSpan({ text: "." });
 
     new Setting(containerEl).setHeading().setName("Settings");
 
@@ -545,7 +519,7 @@ class LocalRestApiSettingTab extends PluginSettingTab {
         text: "You should re-generate your certificate!",
       });
       shouldRegenerateCertificateDiv.createSpan({
-        text: " Your certificate was generated using earlier standards than are currently used by Obsidian Local REST API with MCP. Some systems or tools may not accept your certificate with its current configuration, and re-generating your certificate may improve compatibility with such tools.  To re-generate your certificate, press the \"Re-generate Certificates\" button below.",
+        text: " Your certificate was generated using earlier standards than are currently used by AI Memory Store. Some systems or tools may not accept your certificate with its current configuration, and re-generating your certificate may improve compatibility with such tools.  To re-generate your certificate, press the \"Re-generate Certificates\" button below.",
       });
     }
 
@@ -686,7 +660,7 @@ class LocalRestApiSettingTab extends PluginSettingTab {
       new Setting(containerEl)
         .setName("Encrypted (HTTPS) server port")
         .setDesc(
-          "This configures the port on which your REST API will listen for HTTPS connections.  It is recommended that you leave this port with its default setting as tools integrating with this API may expect the default port to be in use.  Under no circumstances is it recommended that you expose this service directly to the internet."
+          "This configures the port on which the HTTPS MCP server listens. It is recommended that you leave this port with its default setting as tools integrating with this server may expect the default port to be in use. Under no circumstances is it recommended that you expose this service directly to the internet."
         )
         .addText((cb) =>
           cb
@@ -807,20 +781,3 @@ class LocalRestApiSettingTab extends PluginSettingTab {
     }
   }
 }
-
-export const getAPI = (
-  app: App,
-  manifest: PluginManifest,
-  version?: number,
-): LocalRestApiPublicApi | undefined => {
-  const plugin = app.plugins.plugins["obsidian-local-rest-api"];
-  if (!plugin) return undefined;
-  const api = (plugin as unknown as LocalRestApi).getPublicApi(manifest);
-  if (version !== undefined) {
-    const availableVersion = api.apiVersion ?? 1;
-    if (availableVersion < version) {
-      throw new ApiVersionUnsupportedError(version, availableVersion);
-    }
-  }
-  return api;
-};
