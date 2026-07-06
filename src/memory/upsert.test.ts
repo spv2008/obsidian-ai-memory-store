@@ -55,4 +55,19 @@ describe("memoryUpsert", () => {
     expect(updated).not.toContain("Old body");
     expect((updated?.match(/## Recall ranking/g) ?? []).length).toBe(1);
   });
+
+  test("replace_section creates a new file when missing", async () => {
+    const writer = new MapVaultWriter({});
+    const result = await memoryUpsert(writer, {
+      project: "demo",
+      relativePath: "long-term/code-patterns.md",
+      mode: "replace_section",
+      target: "Error handling",
+      content: "Always surface vault write failures to the caller.",
+    });
+    expect(result.created).toBe(true);
+    const updated = await writer.read(result.path);
+    expect(updated).toContain("## Error handling");
+    expect(updated).toContain("surface vault write failures");
+  });
 });

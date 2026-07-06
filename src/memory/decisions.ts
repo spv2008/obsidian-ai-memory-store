@@ -1,6 +1,6 @@
 import {
   appendRegisterRow,
-  createRegisterTable,
+  createEmptyRegisterTable,
   parseRegisterTable,
   updateRegisterRow,
 } from "./parse/registerTable";
@@ -86,12 +86,12 @@ async function ensureDecisionsIndex(
   if (existing) {
     return existing;
   }
-  const created = createRegisterTable(`Decision Register: ${project}`, [
-    "YYYY-MM-DD",
+  const created = createEmptyRegisterTable(`Decision Register: ${project}`, [
+    "Decided",
     "Decision",
-    "active",
-    "area",
-    "[[slug]]",
+    "Status",
+    "Area",
+    "Note",
   ]);
   await writer.write(indexPath, created);
   return created;

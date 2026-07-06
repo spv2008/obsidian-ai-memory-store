@@ -64,6 +64,23 @@ describe("memoryWriteDecision", () => {
     ).rejects.toBeInstanceOf(DuplicateDecisionError);
   });
 
+  test("seeds an empty decisions index without placeholder rows", async () => {
+    const writer = new MapVaultWriter({});
+    await memoryWriteDecision(writer, {
+      project: "new-app",
+      slug: "first-decision",
+      title: "First decision",
+      body: "**Decision**: Start with an empty register.",
+      area: "core",
+      decided: "2026-07-08",
+    });
+    const index = await writer.read(
+      "memory/projects/new-app/long-term/decisions-index.md",
+    );
+    expect(index).not.toContain("YYYY-MM-DD");
+    expect(index).toContain("First decision");
+  });
+
   test("written decision is discoverable via memory_recall", async () => {
     const writer = new MapVaultWriter({ ...loadFixtureVault("demo") });
     await memoryWriteDecision(writer, {

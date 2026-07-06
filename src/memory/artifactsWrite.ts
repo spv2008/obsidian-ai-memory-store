@@ -79,7 +79,15 @@ export async function memoryWriteArchitecture(
   return writeContent(writer, path, input.content, input.mode);
 }
 
-const PHASE_FILE_INPUT_PATTERN = /^\d{2}-.+$/;
+const PHASE_FILE_INPUT_PATTERN = /^\d{2}-[^/\\]+$/;
+
+function normalizePhaseFileInput(file: string): string {
+  const trimmed = file.trim();
+  if (trimmed.toLowerCase().endsWith(".md")) {
+    return trimmed.slice(0, -3);
+  }
+  return trimmed;
+}
 
 export function resolvePlanFilePath(
   taskId: string,
@@ -90,12 +98,13 @@ export function resolvePlanFilePath(
   if (trimmed === "master-plan") {
     return planMasterPath(taskId, briefDescription);
   }
-  if (!PHASE_FILE_INPUT_PATTERN.test(trimmed)) {
+  const phaseName = normalizePhaseFileInput(trimmed);
+  if (!PHASE_FILE_INPUT_PATTERN.test(phaseName)) {
     throw new InvalidPlanFileError(
       'Plan file must be "master-plan" or "{NN}-{phase-description}"',
     );
   }
-  return planPhasePath(taskId, briefDescription, `${trimmed}.md`);
+  return planPhasePath(taskId, briefDescription, `${phaseName}.md`);
 }
 
 export async function memoryWritePlan(

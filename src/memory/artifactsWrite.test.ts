@@ -59,6 +59,15 @@ describe("plan and manual-test write tools", () => {
     expect(() =>
       resolvePlanFilePath("TASK-1", "feature", "1-bad-prefix"),
     ).toThrow(InvalidPlanFileError);
+    expect(() =>
+      resolvePlanFilePath("TASK-1", "feature", "02-nested/path"),
+    ).toThrow(InvalidPlanFileError);
+  });
+
+  test("normalizes optional .md extension for phase files", () => {
+    expect(
+      resolvePlanFilePath("TASK-1", "feature", "02-write-path.md"),
+    ).toBe("plans/TASK-1-feature/02-write-path.md");
   });
 
   test("creates manual test plan and insomnia files", async () => {

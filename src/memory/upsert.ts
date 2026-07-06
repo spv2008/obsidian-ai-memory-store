@@ -131,10 +131,18 @@ export async function memoryUpsert(
       if (!heading) {
         throw new Error("replace_section requires target heading");
       }
+      const createMissing = input.createTargetIfMissing ?? true;
+      if (!existed) {
+        if (!createMissing) {
+          throw new Error(`File not found: ${path}`);
+        }
+        await writer.write(path, `## ${heading}\n\n${input.content}\n`);
+        return { path, created: true, deduped: false };
+      }
       await writer.patchSection(path, heading, "replace", input.content, {
-        createTargetIfMissing: input.createTargetIfMissing ?? true,
+        createTargetIfMissing: createMissing,
       });
-      return { path, created: !existed, deduped: false };
+      return { path, created: false, deduped: false };
     }
     default: {
       const exhaustive: never = input.mode;
