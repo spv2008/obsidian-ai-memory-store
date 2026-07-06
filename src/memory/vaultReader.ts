@@ -38,7 +38,9 @@ export class MapVaultReader implements MemoryVaultReader {
   }
 
   async exists(path: string): Promise<boolean> {
-    return Object.prototype.hasOwnProperty.call(this.files, path);
+    return Boolean(
+      Object.prototype.hasOwnProperty.call(this.files, path),
+    );
   }
 
   async listPaths(): Promise<string[]> {

@@ -62,3 +62,37 @@ describe("memoryRecall project sources", () => {
     expect(result.hits.length).toBeLessThanOrEqual(2);
   });
 });
+
+describe("memoryRecall artifact sources", () => {
+  const demoVault = new MapVaultReader(loadFixtureVault("demo"));
+
+  test("resolves artifact chain when taskId is provided", async () => {
+    const result = await memoryRecall(demoVault, {
+      project: "demo",
+      taskId: "TASK-42",
+      sources: ["specifications", "architecture", "plans", "manual-tests"],
+    });
+    const paths = result.hits.map((hit) => hit.path);
+    expect(paths).toEqual(
+      expect.arrayContaining([
+        "specifications/TASK-42-memory-read/spec.md",
+        "architecture/TASK-42-memory-read/proposal.md",
+        "plans/TASK-42-memory-read/master-plan.md",
+        "plans/TASK-42-memory-read/01-foundation.md",
+        "manual-test-plans/memory-read/plan.md",
+      ]),
+    );
+  });
+
+  test("returns master plan and phases as separate hits", async () => {
+    const result = await memoryRecall(demoVault, {
+      project: "demo",
+      taskId: "TASK-42",
+      sources: ["plans"],
+    });
+    const planHits = result.hits.filter((hit) => hit.source === "plans");
+    expect(planHits.length).toBeGreaterThanOrEqual(2);
+    expect(planHits.some((hit) => hit.title === "Master plan")).toBe(true);
+    expect(planHits.some((hit) => hit.title === "01-foundation.md")).toBe(true);
+  });
+});

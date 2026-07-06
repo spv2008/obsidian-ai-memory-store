@@ -1,3 +1,4 @@
+import { resolveWorkflowArtifacts } from "./artifacts/resolve";
 import { excerpt, capExcerptLength } from "./excerpt";
 import {
   conversationContextPath,
@@ -53,6 +54,13 @@ export const PROJECT_RECALL_SOURCES: RecallSource[] = [
   "tasks",
   "daily",
   "context",
+];
+
+export const ARTIFACT_RECALL_SOURCES: RecallSource[] = [
+  "specifications",
+  "architecture",
+  "plans",
+  "manual-tests",
 ];
 
 export interface RecallInput {
@@ -113,6 +121,19 @@ function daysSince(dateString: string): number | null {
   return Math.floor(diff / (1000 * 60 * 60 * 24));
 }
 
+function frontmatterValue(value: unknown): string {
+  if (typeof value === "string") {
+    return value;
+  }
+  if (Array.isArray(value)) {
+    return value.map((entry) => String(entry)).join(" ");
+  }
+  if (value == null) {
+    return "";
+  }
+  return JSON.stringify(value);
+}
+
 export function scoreRecallHit(params: ScoreParams): number {
   let score = hasQueryFilters({
     area: params.area,
@@ -125,7 +146,7 @@ export function scoreRecallHit(params: ScoreParams): number {
 
   const areaLower = params.area?.toLowerCase();
   if (areaLower) {
-    const fmArea = String(params.frontmatter?.area ?? "").toLowerCase();
+    const fmArea = frontmatterValue(params.frontmatter?.area).toLowerCase();
     if (fmArea.includes(areaLower)) score += 100;
     if (params.title.toLowerCase().includes(areaLower)) score += 80;
     if (params.body.toLowerCase().includes(areaLower)) score += 40;
@@ -135,7 +156,7 @@ export function scoreRecallHit(params: ScoreParams): number {
   for (const fileFragment of params.files ?? []) {
     const fragment = fileFragment.toLowerCase();
     if (params.path.toLowerCase().includes(fragment)) score += 80;
-    const fmFiles = String(params.frontmatter?.files ?? "").toLowerCase();
+    const fmFiles = frontmatterValue(params.frontmatter?.files).toLowerCase();
     if (fmFiles.includes(fragment)) score += 80;
   }
 
@@ -424,6 +445,133 @@ export async function recallProjectMemory(
   return hits;
 }
 
+const ARTIFACT_ROOT_BY_SOURCE: Partial<Record<RecallSource, string>> = {
+  specifications: "specifications/",
+  architecture: "architecture/",
+  plans: "plans/",
+  "manual-tests": "manual-test-plans/",
+};
+
+function isArtifactPathForSource(
+  filePath: string,
+  source: RecallSource,
+): boolean {
+  const root = ARTIFACT_ROOT_BY_SOURCE[source];
+  if (!root || !filePath.startsWith(root)) {
+    return false;
+  }
+  if (source === "manual-tests") {
+    return filePath.endsWith("/plan.md") || filePath.endsWith("/insomnia.json");
+  }
+  return filePath.endsWith(".md");
+}
+
+export async function recallArtifactMemory(
+  reader: MemoryVaultReader,
+  input: RecallInput,
+  sources: RecallSource[],
+  excerptLength: number,
+): Promise<RecallHit[]> {
+  const hits: RecallHit[] = [];
+  const allPaths = await reader.listPaths();
+  const artifactSources = sources.filter((source) =>
+    ARTIFACT_RECALL_SOURCES.includes(source),
+  );
+  if (artifactSources.length === 0) {
+    return hits;
+  }
+
+  const candidates: Array<{
+    path: string;
+    source: RecallSource;
+    title: string;
+  }> = [];
+
+  if (input.taskId) {
+    const resolved = resolveWorkflowArtifacts(input.taskId, allPaths);
+    if (artifactSources.includes("specifications") && resolved.specification) {
+      candidates.push({
+        path: resolved.specification,
+        source: "specifications",
+        title: "Specification",
+      });
+    }
+    if (artifactSources.includes("architecture") && resolved.architecture) {
+      candidates.push({
+        path: resolved.architecture,
+        source: "architecture",
+        title: "Architecture",
+      });
+    }
+    if (artifactSources.includes("plans") && resolved.planMaster) {
+      candidates.push({
+        path: resolved.planMaster,
+        source: "plans",
+        title: "Master plan",
+      });
+    }
+    if (artifactSources.includes("plans")) {
+      for (const phasePath of resolved.planPhases) {
+        candidates.push({
+          path: phasePath,
+          source: "plans",
+          title: phasePath.split("/").pop() ?? "Plan phase",
+        });
+      }
+    }
+    if (artifactSources.includes("manual-tests") && resolved.manualTestPlan) {
+      candidates.push({
+        path: resolved.manualTestPlan,
+        source: "manual-tests",
+        title: "Manual test plan",
+      });
+    }
+  } else {
+    for (const source of artifactSources) {
+      for (const filePath of allPaths) {
+        if (!isArtifactPathForSource(filePath, source)) {
+          continue;
+        }
+        candidates.push({
+          path: filePath,
+          source,
+          title: filePath.split("/").pop() ?? filePath,
+        });
+      }
+    }
+  }
+
+  for (const candidate of candidates) {
+    const content = await reader.read(candidate.path);
+    if (!content) {
+      continue;
+    }
+    const score = scoreRecallHit({
+      area: input.area,
+      files: input.files,
+      keywords: input.keywords,
+      tags: input.tags,
+      title: candidate.title,
+      body: content,
+      path: candidate.path,
+      contentTags: extractTags(content),
+      date: extractDateFromPath(candidate.path),
+    });
+    if (score <= 0) {
+      continue;
+    }
+    hits.push({
+      path: candidate.path,
+      source: candidate.source,
+      title: candidate.title,
+      excerpt: excerpt(content, excerptLength),
+      score,
+    });
+  }
+
+  return hits;
+}
+
 export async function memoryRecall(
   reader: MemoryVaultReader,
   input: RecallInput,
@@ -433,13 +581,24 @@ export async function memoryRecall(
   const projectSources = sources.filter((source) =>
     PROJECT_RECALL_SOURCES.includes(source),
   );
-
-  const hits = await recallProjectMemory(
-    reader,
-    input,
-    projectSources,
-    excerptLength,
+  const artifactSources = sources.filter((source) =>
+    ARTIFACT_RECALL_SOURCES.includes(source),
   );
+
+  const hits = [
+    ...(await recallProjectMemory(
+      reader,
+      input,
+      projectSources,
+      excerptLength,
+    )),
+    ...(await recallArtifactMemory(
+      reader,
+      input,
+      artifactSources,
+      excerptLength,
+    )),
+  ];
 
   hits.sort((a, b) => b.score - a.score || a.path.localeCompare(b.path));
   return { hits: hits.slice(0, capMaxResults(input.maxResults)) };
