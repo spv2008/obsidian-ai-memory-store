@@ -6,8 +6,8 @@ import express from "express";
 import type { App, PluginManifest } from "obsidian";
 
 import { LocalRestApiSettings } from "../types";
-import { createObsidianVaultReader } from "../memory/vaultReader";
-import type { MemoryVaultReader } from "../memory/vaultReader";
+import { createObsidianVaultWriter } from "../memory/vaultWriter";
+import type { MemoryVaultWriter } from "../memory/vaultWriter";
 import { registerMemoryTools } from "./registerTools";
 import { textResult } from "./textResult";
 
@@ -35,13 +35,13 @@ interface SessionEntry {
 }
 
 export interface McpHandlerOptions {
-  vault?: MemoryVaultReader;
+  vault?: MemoryVaultWriter;
 }
 
 export class McpHandler {
   private readonly sessions: Map<string, SessionEntry> = new Map();
   private readonly toolSpecs: Map<string, ToolSpec> = new Map();
-  private readonly vault: MemoryVaultReader;
+  private readonly vault: MemoryVaultWriter;
 
   constructor(
     app: App | null,
@@ -52,9 +52,9 @@ export class McpHandler {
     this.vault =
       options.vault ??
       (app
-        ? createObsidianVaultReader(app)
+        ? createObsidianVaultWriter(app)
         : (() => {
-            throw new Error("McpHandler requires App or an injected vault reader");
+            throw new Error("McpHandler requires App or an injected vault writer");
           })());
 
     registerMemoryTools(

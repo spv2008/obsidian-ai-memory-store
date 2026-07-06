@@ -46,6 +46,12 @@ describe("MCP memory tools", () => {
         "memory_bootstrap",
         "memory_recall",
         "memory_get_workflow",
+        "memory_upsert",
+        "memory_write_decision",
+        "memory_write_specification",
+        "memory_write_architecture",
+        "memory_write_plan",
+        "memory_write_manual_test",
       ]),
     );
   });
