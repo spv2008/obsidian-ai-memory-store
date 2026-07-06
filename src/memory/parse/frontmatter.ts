@@ -1,5 +1,18 @@
 const FRONTMATTER_PATTERN = /^---\r?\n([\s\S]*?)\r?\n---/;
 
+export function frontmatterValue(value: unknown): string {
+  if (typeof value === "string") {
+    return value;
+  }
+  if (Array.isArray(value)) {
+    return value.map((entry) => String(entry)).join(" ");
+  }
+  if (value == null) {
+    return "";
+  }
+  return JSON.stringify(value);
+}
+
 export function parseFrontmatter(
   content: string,
 ): Record<string, unknown> | null {

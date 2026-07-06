@@ -11,7 +11,7 @@ import {
   isDecisionNeedsReview,
   parseDecisionsIndex,
 } from "./parse/decisionsIndex";
-import { extractTags, parseFrontmatter } from "./parse/frontmatter";
+import { extractTags, frontmatterValue, parseFrontmatter } from "./parse/frontmatter";
 import { splitSections } from "./parse/sections";
 import { parseTasksIndex } from "./parse/tasksIndex";
 import { extractWikilinkTargets } from "./parse/wikilinks";
@@ -119,19 +119,6 @@ function daysSince(dateString: string): number | null {
   }
   const diff = Date.now() - date.getTime();
   return Math.floor(diff / (1000 * 60 * 60 * 24));
-}
-
-function frontmatterValue(value: unknown): string {
-  if (typeof value === "string") {
-    return value;
-  }
-  if (Array.isArray(value)) {
-    return value.map((entry) => String(entry)).join(" ");
-  }
-  if (value == null) {
-    return "";
-  }
-  return JSON.stringify(value);
 }
 
 export function scoreRecallHit(params: ScoreParams): number {
