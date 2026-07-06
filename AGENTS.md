@@ -59,6 +59,20 @@ Before marking any MCP tool change complete:
 - [ ] README tool table updated
 - [ ] `obsidian-memory` skill updated when user-facing workflows change
 
+## Pull Request Review Comments
+
+When addressing inline review comments on a pull request:
+
+1. Push the fix to the PR branch.
+2. Reply on each addressed comment thread with a short note: what changed, and which commit contains the fix.
+3. Do not mark review feedback as handled without a thread reply — silent fixes make it hard for reviewers to verify.
+
+Use the GitHub API or `gh` to post replies:
+
+```
+gh api -X POST repos/<owner>/<repo>/pulls/<number>/comments/<comment-id>/replies -f body="Fixed in <sha>: ..."
+```
+
 ## Release Process
 
 Releases are performed on the `main` branch after all feature branches have been merged.
