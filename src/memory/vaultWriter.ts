@@ -1,5 +1,5 @@
 import { App } from "obsidian";
-import { applyPatch } from "markdown-patch";
+import { applyPatch, ContentType } from "markdown-patch";
 
 import { VaultOperations } from "../vault/vaultOperations";
 import type { MemoryVaultReader } from "./vaultReader";
@@ -100,8 +100,8 @@ export class MapVaultWriter implements MemoryVaultWriter {
     const patched = applyPatch(base, {
       operation,
       targetType: "heading",
-      target: heading,
-      contentType: "text/markdown",
+      target: heading.split("::"),
+      contentType: ContentType.text,
       content,
       createTargetIfMissing: options?.createTargetIfMissing ?? false,
     });
