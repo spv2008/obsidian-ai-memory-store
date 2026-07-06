@@ -6,7 +6,6 @@ import {
   prepareSimpleSearch,
   TFile,
 } from "obsidian";
-import * as periodicNotes from "obsidian-daily-notes-interface";
 import path from "path";
 import {
   applyPatch,
@@ -29,9 +28,7 @@ export class DestinationAlreadyExistsError extends Error {}
 
 import {
   DocumentMapObject,
-  ErrorCode,
   FileMetadataObject,
-  PeriodicNoteInterface,
   SearchContext,
   SearchJsonResponseItem,
   SearchResponseItem,
@@ -405,99 +402,6 @@ export class VaultOperations {
     const patched = applyPatch(fileContents, instruction);
     await this.app.vault.adapter.write(filePath, patched);
     return patched;
-  }
-
-  getPeriodicNoteInterface(): Record<string, PeriodicNoteInterface> {
-    return {
-      daily: {
-        settings: periodicNotes.getDailyNoteSettings(),
-        loaded: periodicNotes.appHasDailyNotesPluginLoaded(),
-        create: periodicNotes.createDailyNote,
-        get: periodicNotes.getDailyNote,
-        getAll: periodicNotes.getAllDailyNotes,
-      },
-      weekly: {
-        settings: periodicNotes.getWeeklyNoteSettings(),
-        loaded: periodicNotes.appHasWeeklyNotesPluginLoaded(),
-        create: periodicNotes.createWeeklyNote,
-        get: periodicNotes.getWeeklyNote,
-        getAll: periodicNotes.getAllWeeklyNotes,
-      },
-      monthly: {
-        settings: periodicNotes.getMonthlyNoteSettings(),
-        loaded: periodicNotes.appHasMonthlyNotesPluginLoaded(),
-        create: periodicNotes.createMonthlyNote,
-        get: periodicNotes.getMonthlyNote,
-        getAll: periodicNotes.getAllMonthlyNotes,
-      },
-      quarterly: {
-        settings: periodicNotes.getQuarterlyNoteSettings(),
-        loaded: periodicNotes.appHasQuarterlyNotesPluginLoaded(),
-        create: periodicNotes.createQuarterlyNote,
-        get: periodicNotes.getQuarterlyNote,
-        getAll: periodicNotes.getAllQuarterlyNotes,
-      },
-      yearly: {
-        settings: periodicNotes.getYearlyNoteSettings(),
-        loaded: periodicNotes.appHasYearlyNotesPluginLoaded(),
-        create: periodicNotes.createYearlyNote,
-        get: periodicNotes.getYearlyNote,
-        getAll: periodicNotes.getAllYearlyNotes,
-      },
-    };
-  }
-
-  periodicGetInterface(
-    period: string,
-  ): [PeriodicNoteInterface | null, ErrorCode | null] {
-    const periodic = this.getPeriodicNoteInterface();
-    if (!periodic[period]) {
-      return [null, ErrorCode.PeriodDoesNotExist];
-    }
-    if (!periodic[period].loaded) {
-      return [null, ErrorCode.PeriodIsNotEnabled];
-    }
-    return [periodic[period], null];
-  }
-
-  periodicGetNote(
-    periodName: string,
-    timestamp: number,
-  ): [TFile | null, ErrorCode | null] {
-    const [period, err] = this.periodicGetInterface(periodName);
-    if (err || !period) {
-      return [null, err ?? ErrorCode.PeriodDoesNotExist];
-    }
-    const now = window.moment(timestamp);
-    const all = period.getAll();
-
-    const file = period.get(now, all);
-    if (!file) {
-      return [null, ErrorCode.PeriodicNoteDoesNotExist];
-    }
-    return [file, null];
-  }
-
-  async periodicGetOrCreateNote(
-    periodName: string,
-    timestamp: number,
-  ): Promise<[TFile | null, ErrorCode | null]> {
-    const [gottenFile, err] = this.periodicGetNote(periodName, timestamp);
-    let file = gottenFile;
-    if (err === ErrorCode.PeriodicNoteDoesNotExist) {
-      const [period] = this.periodicGetInterface(periodName);
-      if (!period) {
-        return [null, ErrorCode.PeriodDoesNotExist];
-      }
-      const now = window.moment(Date.now());
-
-      file = await period.create(now);
-      await this.waitForFileCache(file);
-    } else if (err) {
-      return [null, err];
-    }
-
-    return [file, null];
   }
 
   async simpleSearch(

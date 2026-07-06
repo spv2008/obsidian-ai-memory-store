@@ -46,7 +46,6 @@
     "json-logic-js": "^2.0.2",
     "markdown-patch": "^1.0.0",
     "node-forge": "^1.2.1",
-    "obsidian-daily-notes-interface": "^0.9.4",
     "response-time": "^2.3.2"
   }
 }

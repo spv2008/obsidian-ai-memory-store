@@ -38,11 +38,13 @@ function makeSettings() {
   };
 }
 
+const TEST_SETTINGS = makeSettings();
+
 describe("HttpServer", () => {
   let server: HttpServer;
 
   beforeEach(() => {
-    server = new HttpServer({} as App, TEST_MANIFEST, makeSettings());
+    server = new HttpServer({} as App, TEST_MANIFEST, TEST_SETTINGS);
     server.setupRouter();
   });
 

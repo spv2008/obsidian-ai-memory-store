@@ -261,7 +261,7 @@ class AiMemoryStoreSettingTab extends PluginSettingTab {
       !getCertificateIsUptoStandards(parsedCertificate);
 
     containerEl.empty();
-    containerEl.classList.add("obsidian-local-rest-api-settings");
+    containerEl.classList.add("obsidian-ai-memory-store-settings");
     // eslint-disable-next-line obsidianmd/ui/sentence-case -- product name
     new Setting(containerEl).setHeading().setName("AI Memory Store");
     new Setting(containerEl).setHeading().setName("MCP connection");

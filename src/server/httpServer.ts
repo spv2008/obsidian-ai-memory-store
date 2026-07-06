@@ -77,14 +77,35 @@ export default class HttpServer {
       next();
     });
     mcpRouter.use(express.json({ limit: MaximumRequestSize }));
-    mcpRouter.all("/", (req, res) => {
-      void this.mcpHandler.handleRequest(req, res);
+    mcpRouter.all("/", (req, res, next) => {
+      void this.mcpHandler.handleRequest(req, res).catch(next);
     });
     this.api.use("/mcp", mcpRouter);
 
     this.api.use((_req, res) => {
       res.status(404).json({ message: "Not Found", errorCode: 40400 });
     });
+
+    this.api.use(
+      (
+        err: unknown,
+        _req: express.Request,
+        res: express.Response,
+        next: express.NextFunction,
+      ) => {
+        if (res.headersSent) {
+          next(err);
+          return;
+        }
+        if (this.settings.enableVerboseLogging) {
+          console.debug("[AI Memory Store] request error", err);
+        }
+        res.status(500).json({
+          message: err instanceof Error ? err.message : "Internal Server Error",
+          errorCode: 50000,
+        });
+      },
+    );
   }
 
   private root(req: express.Request, res: express.Response): void {
@@ -122,10 +143,8 @@ export default class HttpServer {
       res.status(404).json({ message: "Not Found", errorCode: 40400 });
       return;
     }
-    res.set(
-      "Content-type",
-      `application/octet-stream; filename="${CERT_NAME}"`,
-    );
+    res.set("Content-Type", "application/x-pem-file");
+    res.set("Content-Disposition", `attachment; filename="${CERT_NAME}"`);
     res.status(200).send(this.settings.crypto.cert);
   }
 }
