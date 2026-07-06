@@ -26,13 +26,13 @@ export default class HttpServer {
   readonly mcpHandler: McpHandler;
 
   constructor(
-    _app: App,
+    app: App,
     private readonly manifest: PluginManifest,
     private readonly settings: LocalRestApiSettings,
   ) {
     this.api = express();
     this.api.set("json spaces", 2);
-    this.mcpHandler = new McpHandler(this.manifest, this.settings);
+    this.mcpHandler = new McpHandler(app, this.manifest, this.settings);
   }
 
   setupRouter(): void {

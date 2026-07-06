@@ -3,9 +3,11 @@ import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { randomUUID } from "crypto";
 import express from "express";
-import type { PluginManifest } from "obsidian";
+import type { App, PluginManifest } from "obsidian";
 
 import { LocalRestApiSettings } from "../types";
+import { createObsidianVaultReader } from "../memory/vaultReader";
+import type { MemoryVaultReader } from "../memory/vaultReader";
 import { registerMemoryTools } from "./registerTools";
 import { textResult } from "./textResult";
 
@@ -32,20 +34,35 @@ interface SessionEntry {
   toolHandles: Map<string, { remove: () => void }>;
 }
 
+export interface McpHandlerOptions {
+  vault?: MemoryVaultReader;
+}
+
 export class McpHandler {
   private readonly sessions: Map<string, SessionEntry> = new Map();
   private readonly toolSpecs: Map<string, ToolSpec> = new Map();
+  private readonly vault: MemoryVaultReader;
 
   constructor(
+    app: App | null,
     private readonly manifest: PluginManifest,
     private readonly settings: LocalRestApiSettings,
+    options: McpHandlerOptions = {},
   ) {
+    this.vault =
+      options.vault ??
+      (app
+        ? createObsidianVaultReader(app)
+        : (() => {
+            throw new Error("McpHandler requires App or an injected vault reader");
+          })());
+
     registerMemoryTools(
       {
         tool: (name, description, schema, callback) =>
           this.tool(name, description, schema, callback),
       },
-      this.manifest,
+      { vault: this.vault, manifest: this.manifest },
     );
   }
 

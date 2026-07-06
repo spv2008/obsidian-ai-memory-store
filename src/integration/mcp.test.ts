@@ -38,9 +38,16 @@ afterAll(async () => {
 });
 
 describe("MCP memory tools", () => {
-  test("lists memory_status", async () => {
+  test("lists memory read tools", async () => {
     const tools = await client.listTools();
-    expect(tools.tools.map((t) => t.name)).toContain("memory_status");
+    expect(tools.tools.map((t) => t.name)).toEqual(
+      expect.arrayContaining([
+        "memory_status",
+        "memory_bootstrap",
+        "memory_recall",
+        "memory_get_workflow",
+      ]),
+    );
   });
 
   test("memory_status returns ok", async () => {

@@ -30,6 +30,8 @@ jest.mock("@modelcontextprotocol/sdk/server/streamableHttp.js", () => ({
 import { McpHandler } from "./handler";
 import { DEFAULT_SETTINGS } from "../constants";
 import { SERVICE_NAME } from "../constants";
+import { loadFixtureVault } from "../memory/fixtureLoader";
+import { MapVaultReader } from "../memory/vaultReader";
 
 const TEST_MANIFEST = {
   id: "obsidian-ai-memory-store",
@@ -39,6 +41,14 @@ const TEST_MANIFEST = {
   author: "Test",
   description: "Test",
 };
+
+const demoVault = new MapVaultReader(loadFixtureVault("demo"));
+
+function makeHandler(): McpHandler {
+  return new McpHandler(null, TEST_MANIFEST, DEFAULT_SETTINGS, {
+    vault: demoVault,
+  });
+}
 
 describe("McpHandler", () => {
   beforeEach(() => {
@@ -52,15 +62,23 @@ describe("McpHandler", () => {
     );
   }
 
-  test("registers memory_status tool only", async () => {
-    const mcp = new McpHandler(TEST_MANIFEST, DEFAULT_SETTINGS);
+  test("registers memory read tools", async () => {
+    const mcp = makeHandler();
     await buildSession(mcp);
-    expect(mockTool).toHaveBeenCalledTimes(1);
-    expect(mockTool.mock.calls[0][0]).toBe("memory_status");
+    const toolNames = mockTool.mock.calls.map((call) => call[0]);
+    expect(toolNames).toEqual(
+      expect.arrayContaining([
+        "memory_status",
+        "memory_bootstrap",
+        "memory_recall",
+        "memory_get_workflow",
+      ]),
+    );
+    expect(toolNames).toHaveLength(4);
   });
 
   test("memory_status returns ok payload", async () => {
-    const mcp = new McpHandler(TEST_MANIFEST, DEFAULT_SETTINGS);
+    const mcp = makeHandler();
     const result = await mcp.invokeToolForTest("memory_status");
     expect(result.content).toHaveLength(1);
     const payload = JSON.parse(result.content[0].text);
@@ -72,8 +90,54 @@ describe("McpHandler", () => {
     });
   });
 
+  test("memory_bootstrap uses injected fixture vault", async () => {
+    const mcp = makeHandler();
+    const result = await mcp.invokeToolForTest("memory_bootstrap", {
+      project: "demo",
+    });
+    const payload = JSON.parse(result.content[0].text) as {
+      projectExists: boolean;
+      activeTask: { name: string } | null;
+    };
+    expect(payload.projectExists).toBe(true);
+    expect(payload.activeTask?.name).toBe("Implement memory read tools");
+  });
+
+  test("memory_recall returns ranked hits from fixture vault", async () => {
+    const mcp = makeHandler();
+    const result = await mcp.invokeToolForTest("memory_recall", {
+      project: "demo",
+      sources: ["lessons"],
+      keywords: ["recall"],
+    });
+    const payload = JSON.parse(result.content[0].text) as {
+      hits: Array<{ title: string }>;
+    };
+    expect(payload.hits.some((hit) => hit.title === "Recall ranking")).toBe(
+      true,
+    );
+  });
+
+  test("memory_get_workflow resolves task chain from fixture vault", async () => {
+    const mcp = makeHandler();
+    const result = await mcp.invokeToolForTest("memory_get_workflow", {
+      taskId: "TASK-42",
+      project: "demo",
+    });
+    const payload = JSON.parse(result.content[0].text) as {
+      specification?: { path: string };
+      relatedDecisions: Array<{ title: string }>;
+    };
+    expect(payload.specification?.path).toBe(
+      "specifications/TASK-42-memory-read/spec.md",
+    );
+    expect(payload.relatedDecisions.map((d) => d.title)).toContain(
+      "Use excerpt-only recall",
+    );
+  });
+
   test("routes subsequent requests to existing session transport", async () => {
-    const mcp = new McpHandler(TEST_MANIFEST, DEFAULT_SETTINGS);
+    const mcp = makeHandler();
     await buildSession(mcp);
     const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
     await mcp.handleRequest(
@@ -88,7 +152,7 @@ describe("McpHandler", () => {
   });
 
   test("returns 404 for unknown session id", async () => {
-    const mcp = new McpHandler(TEST_MANIFEST, DEFAULT_SETTINGS);
+    const mcp = makeHandler();
     const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
     await mcp.handleRequest(
       {
