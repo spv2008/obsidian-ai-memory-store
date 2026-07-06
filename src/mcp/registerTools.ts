@@ -3,9 +3,21 @@ import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 
 import { memoryBootstrap, type BootstrapInput } from "../memory/bootstrap";
+import { memoryWriteDecision, type WriteDecisionInput } from "../memory/decisions";
+import {
+  memoryWriteArchitecture,
+  memoryWriteManualTest,
+  memoryWritePlan,
+  memoryWriteSpecification,
+  type WriteArchitectureInput,
+  type WriteManualTestInput,
+  type WritePlanInput,
+  type WriteSpecificationInput,
+} from "../memory/artifactsWrite";
 import { memoryRecall, type RecallInput } from "../memory/recall";
+import { memoryUpsert, type UpsertInput } from "../memory/upsert";
 import { memoryGetWorkflow, type WorkflowInput } from "../memory/workflow";
-import type { MemoryVaultReader } from "../memory/vaultReader";
+import type { MemoryVaultWriter } from "../memory/vaultWriter";
 import { SERVICE_NAME } from "../constants";
 import { textResult } from "./textResult";
 
@@ -33,7 +45,7 @@ export interface ToolRegistrar {
 }
 
 export interface MemoryToolDeps {
-  vault: MemoryVaultReader;
+  vault: MemoryVaultWriter;
   manifest: PluginManifest;
 }
 
@@ -128,6 +140,142 @@ export function registerMemoryTools(
       const result = await memoryGetWorkflow(
         deps.vault,
         args as WorkflowInput,
+      );
+      return textResult(result);
+    },
+  );
+
+  register.tool(
+    "memory_upsert",
+    "Create or update a project memory file, section, or append content with optional section dedupe.",
+    {
+      project: z.string().describe("Project slug under memory/projects/"),
+      relativePath: z
+        .string()
+        .describe("Path relative to the project root"),
+      mode: z
+        .enum([
+          "replace_file",
+          "append_file",
+          "append_section",
+          "replace_section",
+        ])
+        .describe("Write mode"),
+      content: z.string().describe("Markdown content to write"),
+      target: z
+        .string()
+        .optional()
+        .describe("Target heading for section modes"),
+      createTargetIfMissing: z
+        .boolean()
+        .optional()
+        .describe("Create the target section when missing"),
+      dedupeKey: z
+        .string()
+        .optional()
+        .describe("Section heading used to replace an existing section"),
+    },
+    async (args) => {
+      const result = await memoryUpsert(deps.vault, args as UpsertInput);
+      return textResult(result);
+    },
+  );
+
+  register.tool(
+    "memory_write_decision",
+    "Write an atomic decision note and append its register row, optionally superseding a prior decision.",
+    {
+      project: z.string(),
+      slug: z.string(),
+      title: z.string(),
+      body: z.string(),
+      area: z.string(),
+      decided: z.string().describe("YYYY-MM-DD"),
+      status: z.string().optional(),
+      files: z.array(z.string()).optional(),
+      origin: z.string().optional(),
+      supersedes: z.string().optional(),
+      reviewed: z.string().optional(),
+    },
+    async (args) => {
+      const result = await memoryWriteDecision(
+        deps.vault,
+        args as WriteDecisionInput,
+      );
+      return textResult(result);
+    },
+  );
+
+  register.tool(
+    "memory_write_specification",
+    "Write specifications/{task-id}-{feature}/spec.md, creating the folder when missing.",
+    {
+      taskId: z.string(),
+      featureName: z.string(),
+      content: z.string(),
+      mode: z.enum(["replace", "append"]).optional(),
+    },
+    async (args) => {
+      const result = await memoryWriteSpecification(
+        deps.vault,
+        args as WriteSpecificationInput,
+      );
+      return textResult(result);
+    },
+  );
+
+  register.tool(
+    "memory_write_architecture",
+    "Write architecture/{task-id}-{feature}/proposal.md, creating the folder when missing.",
+    {
+      taskId: z.string(),
+      featureName: z.string(),
+      content: z.string(),
+      mode: z.enum(["replace", "append"]).optional(),
+    },
+    async (args) => {
+      const result = await memoryWriteArchitecture(
+        deps.vault,
+        args as WriteArchitectureInput,
+      );
+      return textResult(result);
+    },
+  );
+
+  register.tool(
+    "memory_write_plan",
+    "Write plans/{task-id}-{description}/master-plan.md or a phase file.",
+    {
+      taskId: z.string(),
+      briefDescription: z.string(),
+      file: z
+        .string()
+        .describe('Use "master-plan" or a phase name like "01-foundation"'),
+      content: z.string(),
+      mode: z.enum(["replace", "append"]).optional(),
+    },
+    async (args) => {
+      const result = await memoryWritePlan(
+        deps.vault,
+        args as WritePlanInput,
+      );
+      return textResult(result);
+    },
+  );
+
+  register.tool(
+    "memory_write_manual_test",
+    "Write manual-test-plans/{feature}/plan.md or insomnia.json.",
+    {
+      featureName: z.string(),
+      file: z.enum(["plan", "insomnia"]),
+      content: z.string(),
+      mode: z.enum(["replace", "append"]).optional(),
+    },
+    async (args) => {
+      const result = await memoryWriteManualTest(
+        deps.vault,
+        args as WriteManualTestInput,
       );
       return textResult(result);
     },

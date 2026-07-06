@@ -149,6 +149,16 @@ export function createRegisterTable(title: string, row: string[]): string {
   ].join("\n");
 }
 
+export function createEmptyRegisterTable(title: string, header: string[]): string {
+  return [
+    `# ${title}`,
+    "",
+    formatTableRow(header),
+    formatTableRow(header.map(() => "---")),
+    "",
+  ].join("\n");
+}
+
 function inferHeaderFromRow(row: string[]): string[] {
   if (row.length >= 6) {
     return ["Task", "Started", "Finished", "Status", "Outcome", "Note"];
