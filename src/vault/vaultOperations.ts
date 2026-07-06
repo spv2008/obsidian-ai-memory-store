@@ -1,8 +1,6 @@
 import {
-  getAllTags,
   App,
   CachedMetadata,
-  Command,
   prepareSimpleSearch,
   TFile,
 } from "obsidian";
@@ -14,17 +12,13 @@ import {
   PatchOperation,
   PatchTargetType,
 } from "markdown-patch";
- 
+
 const jsonLogic = require("json-logic-js") as {
   apply: (logic: unknown, data?: unknown) => unknown;
   add_operation: (name: string, code: (...args: unknown[]) => unknown) => void;
 };
- 
-const WildcardRegexp = require("glob-to-regexp") as (pattern: string) => RegExp;
 
-export class FileNotFoundError extends Error {}
-export class CommandNotFoundError extends Error {}
-export class DestinationAlreadyExistsError extends Error {}
+const WildcardRegexp = require("glob-to-regexp") as (pattern: string) => RegExp;
 
 import {
   DocumentMapObject,
@@ -33,7 +27,10 @@ import {
   SearchJsonResponseItem,
   SearchResponseItem,
 } from "./types";
-import { toArrayBuffer } from "./utils";
+import { FileNotFoundError, DestinationAlreadyExistsError } from "./errors";
+import { toArrayBuffer } from "../utils";
+
+export { FileNotFoundError, DestinationAlreadyExistsError } from "./errors";
 
 export class VaultOperations {
   constructor(readonly app: App) {
@@ -85,7 +82,7 @@ export class VaultOperations {
           resolved = true;
           this.app.metadataCache.off("changed", onCacheChange);
           console.warn(
-            `[REST API] Timeout waiting for metadata cache for ${file.path} after ${timeoutMs}ms`,
+            `[AI Memory Store] Timeout waiting for metadata cache for ${file.path} after ${timeoutMs}ms`,
           );
           resolve(this.app.metadataCache.getFileCache(file));
         }
@@ -196,50 +193,6 @@ export class VaultOperations {
       links,
       backlinks,
     };
-  }
-
-  async resolvePathAndTarget(rawPath: string): Promise<{
-    filePath: string;
-    targetType?: string;
-    target?: string;
-  } | null> {
-    const normalizedPath = rawPath.endsWith("/")
-      ? rawPath.slice(0, -1)
-      : rawPath;
-    if (!normalizedPath) return null;
-
-    let exactStat = null;
-    try {
-      exactStat = await this.app.vault.adapter.stat(normalizedPath);
-    } catch {
-      // ENOTDIR: a path component is a file, not a directory;
-      // fall through to the backward walk which will find the actual file.
-    }
-    if (exactStat?.type === "file") {
-      return { filePath: normalizedPath };
-    }
-
-    const segments = normalizedPath.split("/");
-    for (let i = segments.length - 1; i >= 1; i--) {
-      const candidate = segments.slice(0, i).join("/");
-      let s = null;
-      try {
-        s = await this.app.vault.adapter.stat(candidate);
-      } catch {
-        continue;
-      }
-      if (s?.type === "file") {
-        const remainder = segments.slice(i);
-        const targetType = remainder[0];
-        const target =
-          targetType === "heading"
-            ? remainder.slice(1).join("::")
-            : remainder[1];
-        return { filePath: candidate, targetType, target };
-      }
-    }
-
-    return null;
   }
 
   async listVaultDirectory(dirPath: string): Promise<string[]> {
@@ -360,8 +313,6 @@ export class VaultOperations {
     return sourceFile.path;
   }
 
-  // Throws PatchFailed on patch error; caller is responsible for mapping to
-  // the appropriate HTTP error code or MCP error.
   async patchFileSection(
     filePath: string,
     targetType: PatchTargetType,
@@ -407,11 +358,21 @@ export class VaultOperations {
   async simpleSearch(
     query: string,
     contextLength = 100,
+    pathPrefix?: string,
   ): Promise<SearchResponseItem[]> {
     const results: SearchResponseItem[] = [];
     const search = prepareSimpleSearch(query);
+    const normalizedPrefix = pathPrefix
+      ? pathPrefix.endsWith("/")
+        ? pathPrefix
+        : pathPrefix + "/"
+      : undefined;
 
     for (const file of this.app.vault.getMarkdownFiles()) {
+      if (normalizedPrefix && !file.path.startsWith(normalizedPrefix)) {
+        continue;
+      }
+
       const cachedContents = await this.app.vault.cachedRead(file);
 
       const filenamePrefix = file.basename + "\n\n";
@@ -459,13 +420,27 @@ export class VaultOperations {
 
   async searchJsonLogic(
     query: unknown,
+    pathPrefix?: string,
   ): Promise<SearchJsonResponseItem[]> {
     const results: SearchJsonResponseItem[] = [];
     const backlinksIndex = this.buildBacklinksIndex();
     const includeContent = JSON.stringify(query).includes('"content"');
+    const normalizedPrefix = pathPrefix
+      ? pathPrefix.endsWith("/")
+        ? pathPrefix
+        : pathPrefix + "/"
+      : undefined;
 
     for (const file of this.app.vault.getMarkdownFiles()) {
-      const fileContext = await this.getFileMetadataObject(file, backlinksIndex, includeContent);
+      if (normalizedPrefix && !file.path.startsWith(normalizedPrefix)) {
+        continue;
+      }
+
+      const fileContext = await this.getFileMetadataObject(
+        file,
+        backlinksIndex,
+        includeContent,
+      );
 
       try {
         const fileResult = jsonLogic.apply(query, fileContext);
@@ -487,53 +462,5 @@ export class VaultOperations {
     if (Array.isArray(value)) return value.length > 0;
     if (typeof value === "object") return Object.keys(value).length > 0;
     return Boolean(value);
-  }
-
-  getAllTags(): Array<{ name: string; count: number }> {
-    const tagCounts: Record<string, number> = {};
-    for (const file of this.app.vault.getMarkdownFiles()) {
-      const cache = this.app.metadataCache.getFileCache(file);
-      if (!cache) continue;
-      const fileTags = getAllTags(cache);
-      if (!fileTags) continue;
-      for (const rawTag of fileTags) {
-        const tag = rawTag.startsWith("#") ? rawTag.slice(1) : rawTag;
-        tagCounts[tag] = (tagCounts[tag] || 0) + 1;
-        const parts = tag.split("/");
-        for (let i = 1; i < parts.length; i++) {
-          const parent = parts.slice(0, i).join("/");
-          tagCounts[parent] = (tagCounts[parent] || 0) + 1;
-        }
-      }
-    }
-    const tags: { name: string; count: number }[] = [];
-    for (const [tag, count] of Object.entries(tagCounts)) {
-      if (!tag) continue;
-      tags.push({ name: tag, count });
-    }
-    return tags;
-  }
-
-  listCommands(): Command[] {
-    const commands: Command[] = [];
-    for (const commandName in this.app.commands.commands) {
-      commands.push({
-        id: commandName,
-        name: this.app.commands.commands[commandName].name,
-      });
-    }
-    return commands;
-  }
-
-  executeCommand(commandId: string): void {
-    const cmd = this.app.commands.commands[commandId];
-    if (!cmd) {
-      throw new CommandNotFoundError(`Command not found: ${commandId}`);
-    }
-    this.app.commands.executeCommandById(commandId);
-  }
-
-  openVaultFile(filePath: string, newLeaf = false): void {
-    void this.app.workspace.openLinkText(filePath, "/", newLeaf);
   }
 }

@@ -1,4 +1,4 @@
-import { FileStats, TFile } from "obsidian";
+import { TFile } from "obsidian";
 
 export enum ErrorCode {
   TextContentEncodingRequired = 40010,
@@ -116,40 +116,4 @@ export interface ErrorResponseDescriptor {
 export interface CannedResponse {
   message: string;
   errorCode?: number;
-}
-
-export interface SearchContext {
-  match: {
-    start: number;
-    end: number;
-    source: "filename" | "content";
-  };
-  context: string;
-}
-
-export interface SearchResponseItem {
-  filename: string;
-  score?: number;
-  matches: SearchContext[];
-}
-
-export interface SearchJsonResponseItem {
-  filename: string;
-  result: unknown;
-}
-
-export interface FileMetadataObject {
-  tags: string[];
-  frontmatter: Record<string, unknown>;
-  stat: FileStats;
-  path: string;
-  content: string;
-  links: string[];
-  backlinks: string[];
-}
-
-export interface DocumentMapObject {
-  headings: string[];
-  blocks: string[];
-  frontmatterFields: string[];
 }
