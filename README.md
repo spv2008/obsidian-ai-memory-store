@@ -52,13 +52,20 @@ claude mcp add --transport http obsidian-ai-memory-store https://127.0.0.1:27124
   --header "Authorization: Bearer <your-api-key>"
 ```
 
-## MCP tools (Phase 01)
+## MCP tools
 
 | Tool | Description |
 |---|---|
 | `memory_status` | Health check — returns plugin version and service name |
-
-Memory-native tools (`memory_bootstrap`, `memory_recall`, etc.) are planned in subsequent phases. See the delivery plan linked above.
+| `memory_bootstrap` | Load project memory bundle for session start (registers, daily log, active-work excerpts) |
+| `memory_recall` | Ranked excerpt-only retrieval across project memory and artifact sources |
+| `memory_get_workflow` | Resolve a task id to spec, architecture, plan, manual-test artifacts, and related decisions |
+| `memory_upsert` | Create or update project memory files and sections with optional heading dedupe |
+| `memory_write_decision` | Write an atomic decision note and register row, with optional supersede |
+| `memory_write_specification` | Write `specifications/{task-id}-{feature}/spec.md` |
+| `memory_write_architecture` | Write `architecture/{task-id}-{feature}/proposal.md` |
+| `memory_write_plan` | Write `plans/{task-id}-{description}/master-plan.md` or a phase file |
+| `memory_write_manual_test` | Write `manual-test-plans/{feature}/plan.md` or `insomnia.json` |
 
 ## Development
 
