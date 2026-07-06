@@ -95,4 +95,19 @@ describe("memoryRecall artifact sources", () => {
     expect(planHits.some((hit) => hit.title === "Master plan")).toBe(true);
     expect(planHits.some((hit) => hit.title === "01-foundation.md")).toBe(true);
   });
+
+  test("enumerates vault paths only once per recall request", async () => {
+    const listPaths = jest.fn(demoVault.listPaths.bind(demoVault));
+    const reader = {
+      read: demoVault.read.bind(demoVault),
+      exists: demoVault.exists.bind(demoVault),
+      listPaths,
+    };
+    await memoryRecall(reader, {
+      project: "demo",
+      sources: ["context", "specifications"],
+      taskId: "TASK-42",
+    });
+    expect(listPaths).toHaveBeenCalledTimes(1);
+  });
 });

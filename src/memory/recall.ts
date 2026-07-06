@@ -259,9 +259,9 @@ export async function recallProjectMemory(
   input: RecallInput,
   sources: RecallSource[],
   excerptLength: number,
+  allPaths: string[],
 ): Promise<RecallHit[]> {
   const hits: RecallHit[] = [];
-  const allPaths = await reader.listPaths();
   const prefix = projectMemoryPrefix(input.project);
 
   if (sources.includes("context")) {
@@ -458,9 +458,9 @@ export async function recallArtifactMemory(
   input: RecallInput,
   sources: RecallSource[],
   excerptLength: number,
+  allPaths: string[],
 ): Promise<RecallHit[]> {
   const hits: RecallHit[] = [];
-  const allPaths = await reader.listPaths();
   const artifactSources = sources.filter((source) =>
     ARTIFACT_RECALL_SOURCES.includes(source),
   );
@@ -572,18 +572,21 @@ export async function memoryRecall(
     ARTIFACT_RECALL_SOURCES.includes(source),
   );
 
+  const allPaths = await reader.listPaths();
   const hits = [
     ...(await recallProjectMemory(
       reader,
       input,
       projectSources,
       excerptLength,
+      allPaths,
     )),
     ...(await recallArtifactMemory(
       reader,
       input,
       artifactSources,
       excerptLength,
+      allPaths,
     )),
   ];
 

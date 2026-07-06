@@ -33,6 +33,19 @@ describe("memoryBootstrap", () => {
     );
   });
 
+  test("caps register indexes and latest daily to excerptLength", async () => {
+    const result = await memoryBootstrap(demoVault, {
+      project: "demo",
+      excerptLength: 50,
+    });
+    if (!result.tasksIndex || !result.decisionsIndex || !result.latestDaily) {
+      throw new Error("expected bootstrap register and daily fields");
+    }
+    expect(result.tasksIndex.length).toBeLessThanOrEqual(51);
+    expect(result.decisionsIndex.length).toBeLessThanOrEqual(51);
+    expect(result.latestDaily.content.length).toBeLessThanOrEqual(51);
+  });
+
   test("resolves activeWork links from current-task", async () => {
     const result = await memoryBootstrap(demoVault, {
       project: "demo",

@@ -60,6 +60,7 @@ async function findLatestDaily(
   reader: MemoryVaultReader,
   project: string,
   allPaths: string[],
+  excerptLength: number,
 ): Promise<LatestDaily | null> {
   const prefix = `${projectMemoryPrefix(project)}daily/`;
   const dates = allPaths
@@ -80,7 +81,7 @@ async function findLatestDaily(
     return null;
   }
 
-  return { date, path: filePath, content };
+  return { date, path: filePath, content: excerpt(content, excerptLength) };
 }
 
 async function buildActiveWork(
@@ -150,7 +151,7 @@ export async function memoryBootstrap(
   );
 
   const latestDaily = projectExists
-    ? await findLatestDaily(reader, input.project, allPaths)
+    ? await findLatestDaily(reader, input.project, allPaths, excerptLength)
     : null;
   const activeWork = await buildActiveWork(
     reader,
@@ -166,10 +167,12 @@ export async function memoryBootstrap(
       ? excerpt(conversationContext, excerptLength)
       : null,
     currentTask: currentTask ? excerpt(currentTask, excerptLength) : null,
-    tasksIndex,
+    tasksIndex: tasksIndex ? excerpt(tasksIndex, excerptLength) : null,
     parkedTasks,
     activeTask,
-    decisionsIndex,
+    decisionsIndex: decisionsIndex
+      ? excerpt(decisionsIndex, excerptLength)
+      : null,
     activeDecisions,
     needsReviewDecisions,
     latestDaily,
