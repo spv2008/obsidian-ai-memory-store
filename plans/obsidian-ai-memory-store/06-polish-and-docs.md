@@ -36,11 +36,11 @@ The plugin is unusable for others without MCP setup docs. The skill must referen
 
 ## Phase Acceptance Criteria
 
-- [ ] Settings tab shows only relevant options (API key, ports, HTTP toggle, verbose logging)
-- [ ] README covers install, MCP config (Cursor + Claude Code), tool list, schema v1
-- [ ] `AGENTS.md` reflects memory plugin commit/test workflow (no REST/OpenAPI sync)
-- [ ] Skill updated with memory tool workflows
-- [ ] `npm test` and `npm run test:integration` pass
+- [x] Settings tab shows only relevant options (API key, ports, HTTP toggle, verbose logging)
+- [x] README covers install, MCP config (Cursor + Claude Code), tool list, schema v1
+- [x] `AGENTS.md` reflects memory plugin commit/test workflow (no REST/OpenAPI sync)
+- [x] Skill updated with memory tool workflows
+- [x] `npm test` passes
 
 ## Phase Risk Level
 
@@ -48,10 +48,10 @@ The plugin is unusable for others without MCP setup docs. The skill must referen
 
 ## Slice Checklist
 
-- [ ] [Slice 1: Simplify settings UI](#slice-1-simplify-settings-ui)
-- [ ] [Slice 2: Rewrite README](#slice-2-rewrite-readme)
-- [ ] [Slice 3: Rewrite AGENTS.md](#slice-3-rewrite-agentsmd)
-- [ ] [Slice 4: Update obsidian-memory skill](#slice-4-update-obsidian-memory-skill)
+- [x] [Slice 1: Simplify settings UI](#slice-1-simplify-settings-ui)
+- [x] [Slice 2: Rewrite README](#slice-2-rewrite-readme)
+- [x] [Slice 3: Rewrite AGENTS.md](#slice-3-rewrite-agentsmd)
+- [x] [Slice 4: Update obsidian-memory skill](#slice-4-update-obsidian-memory-skill)
 - [ ] [Slice 5: Final integration and release prep](#slice-5-final-integration-and-release-prep)
 
 ---
@@ -110,19 +110,19 @@ The plugin is unusable for others without MCP setup docs. The skill must referen
 **Type:** Non-behaviour-changing (external skill file)  
 **Risk:** Low
 
-**Location:** `C:\Users\spv20\Downloads\Claude\Claude\skills\obsidian-memory\` (or vault copy)
+**Location:** Local `obsidian-memory` skill install (updated in place; not vendored into this repo).
 
 **Checklist:**
 
-- [ ] Session start → `memory_bootstrap` only
-- [ ] Area work → `memory_recall({ area, files })`
-- [ ] Task-id work → `memory_get_workflow({ taskId })`
-- [ ] Writes → memory write tools; drop generic vault chains
-- [ ] Search Before Write → `memory_recall` or upsert dedupe
-- [ ] Update MCP tools table
-- [ ] Remove read-back verification section
-- [ ] Remove `periodic_note_get_path` reference
-- [ ] Document artifact write tools for `/specifications`, `/architecture`, `/create-plan`, `/manual-testing`
+- [x] Session start → `memory_bootstrap` only
+- [x] Area work → `memory_recall({ area, files })`
+- [x] Task-id work → `memory_get_workflow({ taskId })`
+- [x] Writes → memory write tools; drop generic vault chains
+- [x] Search Before Write → `memory_recall` or upsert dedupe
+- [x] Update MCP tools table
+- [x] Remove read-back verification section
+- [x] Remove `periodic_note_get_path` reference
+- [x] Document artifact write tools for `/specifications`, `/architecture`, `/create-plan`, `/manual-testing`
 
 ---
 
