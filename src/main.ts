@@ -1,4 +1,4 @@
-import { App, Plugin, PluginSettingTab, Setting } from "obsidian";
+import { App, Notice, Plugin, PluginSettingTab, Setting } from "obsidian";
 import * as https from "https";
 import * as http from "http";
 import forge, { pki } from "node-forge";
@@ -239,6 +239,14 @@ export default class AiMemoryStorePlugin extends Plugin {
   }
 }
 
+function parsePortValue(value: string): number | null {
+  const port = Number.parseInt(value, 10);
+  if (!Number.isInteger(port) || port < 1 || port > 65535) {
+    return null;
+  }
+  return port;
+}
+
 class AiMemoryStoreSettingTab extends PluginSettingTab {
   plugin: AiMemoryStorePlugin;
   showAdvancedSettings = false;
@@ -355,10 +363,21 @@ class AiMemoryStoreSettingTab extends PluginSettingTab {
     });
     new Setting(mcpDiv)
       .setName("Copy API key")
-      .setDesc("Copy the bearer token value for MCP client configuration.")
+      .setDesc(
+        // eslint-disable-next-line obsidianmd/ui/sentence-case -- Authorization header is a proper term
+        "Copy the Authorization header value shown above for MCP client configuration."
+      )
       .addButton((btn) => {
         btn.setButtonText("Copy").onClick(() => {
-          void navigator.clipboard.writeText(this.plugin.settings.apiKey ?? "");
+          const headerValue = `Bearer ${this.plugin.settings.apiKey ?? ""}`;
+          void navigator.clipboard
+            .writeText(headerValue)
+            .then(() => {
+              new Notice("Authorization header copied to clipboard");
+            })
+            .catch(() => {
+              new Notice("Could not copy to clipboard");
+            });
         });
       });
     const mcpSampleConfig = JSON.stringify(
@@ -396,7 +415,10 @@ class AiMemoryStoreSettingTab extends PluginSettingTab {
       expiredCertDiv.createSpan({
         text: ' Re-generate your certificate below using "Re-generate Certificates" to connect securely to the MCP server.',
       });
-    } else if (remainingCertificateValidityDays &&remainingCertificateValidityDays < 30) {
+    } else if (
+      remainingCertificateValidityDays &&
+      remainingCertificateValidityDays < 30
+    ) {
       const soonExpiringCertDiv = mcpDiv.createDiv();
       soonExpiringCertDiv.classList.add("certificate-expiring-soon");
       const daysRemaining = Math.floor(remainingCertificateValidityDays);
@@ -448,7 +470,11 @@ class AiMemoryStoreSettingTab extends PluginSettingTab {
       .addText((cb) =>
         cb
           .onChange((value) => {
-            this.plugin.settings.port = parseInt(value, 10);
+            const port = parsePortValue(value);
+            if (port === null) {
+              return;
+            }
+            this.plugin.settings.port = port;
             void this.plugin.saveSettings();
             this.plugin.refreshServerState();
             this.display();
@@ -462,7 +488,11 @@ class AiMemoryStoreSettingTab extends PluginSettingTab {
       .addText((cb) =>
         cb
           .onChange((value) => {
-            this.plugin.settings.insecurePort = parseInt(value, 10);
+            const port = parsePortValue(value);
+            if (port === null) {
+              return;
+            }
+            this.plugin.settings.insecurePort = port;
             void this.plugin.saveSettings();
             this.plugin.refreshServerState();
             this.display();
@@ -683,7 +713,7 @@ class AiMemoryStoreSettingTab extends PluginSettingTab {
           }
           void this.plugin.saveSettings();
           this.plugin.refreshServerState();
-        }        ).setValue(
+        }).setValue(
           this.plugin.settings.authorizationHeaderName ??
             DefaultBearerTokenHeaderName
         );
