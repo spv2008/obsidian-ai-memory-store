@@ -43,11 +43,12 @@ Memory Schema v1 (from the `obsidian-memory` skill) is the source of truth for v
 | Layer | Files |
 |---|---|
 | MCP tool definitions | `src/mcp/registerTools.ts`, `src/mcp/handler.ts` |
-| Memory domain logic | `src/memory/` (added in later phases) |
+| Memory domain logic | `src/memory/` |
 | Project README | `README.md` |
 | Delivery plan | `plans/obsidian-ai-memory-store/` |
-| Unit tests | `src/mcp/handler.test.ts`, `src/server/httpServer.test.ts` |
+| Unit tests | `src/mcp/handler.test.ts`, `src/memory/`, `src/server/httpServer.test.ts` |
 | Integration tests | `src/integration/mcp.test.ts` |
+| Agent skill | Local `obsidian-memory` skill install — update when MCP tools or workflows change |
 
 ### Checklist
 

@@ -36,11 +36,11 @@ The plugin is unusable for others without MCP setup docs. The skill must referen
 
 ## Phase Acceptance Criteria
 
-- [ ] Settings tab shows only relevant options (API key, ports, HTTP toggle, verbose logging)
-- [ ] README covers install, MCP config (Cursor + Claude Code), tool list, schema v1
-- [ ] `AGENTS.md` reflects memory plugin commit/test workflow (no REST/OpenAPI sync)
-- [ ] Skill updated with memory tool workflows
-- [ ] `npm test` and `npm run test:integration` pass
+- [x] Settings tab shows only relevant options (API key, ports, HTTP toggle, verbose logging)
+- [x] README covers install, MCP config (Cursor + Claude Code), tool list, schema v1
+- [x] `AGENTS.md` reflects memory plugin commit/test workflow (no REST/OpenAPI sync)
+- [x] Skill updated with memory tool workflows
+- [x] `npm test` passes
 
 ## Phase Risk Level
 

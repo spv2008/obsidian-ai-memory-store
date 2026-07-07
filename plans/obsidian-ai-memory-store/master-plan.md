@@ -191,23 +191,21 @@ manual-test-plans/{feature-name}/insomnia.json
 
 - [x] Phase 01: Foundation restructure
   - File: [01-foundation-restructure.md](01-foundation-restructure.md)
-- [ ] Phase 02: Vault layer and parsers
+- [x] Phase 02: Vault layer and parsers
   - File: [02-vault-and-parsers.md](02-vault-and-parsers.md)
-- [ ] Phase 03: Read path (bootstrap, recall, workflow)
+- [x] Phase 03: Read path (bootstrap, recall, workflow)
   - File: [03-read-path.md](03-read-path.md)
-- [ ] Phase 04: Write path (upsert, decisions, artifacts)
+- [x] Phase 04: Write path (upsert, decisions, artifacts)
   - File: [04-write-path.md](04-write-path.md)
-- [ ] Phase 05: Task lifecycle and find
+- [x] Phase 05: Task lifecycle and find
   - File: [05-tasks-and-find.md](05-tasks-and-find.md)
-- [ ] Phase 06: Settings, docs, and skill alignment
+- [x] Phase 06: Settings, docs, and skill alignment
   - File: [06-polish-and-docs.md](06-polish-and-docs.md)
 
 ## Execution Handoff
 
-**Next recommended action:** Begin Phase 01 / Slice 1 — rebrand manifest and package metadata.
+**Status:** v1 MCP tool surface complete. All six delivery phases implemented.
 
-**Suggested first PR:** Phase 01 complete (foundation restructure, MCP connects, stub tool works).
+**Next recommended action:** Release prep per [AGENTS.md](../../AGENTS.md) when ready to ship.
 
-**Key risks before starting:** MCP session code must not be rewritten in PR 1; move verbatim.
-
-**Parallel opportunities:** None for Phase 01. Phase 02 parser tests can be written in parallel with vault trim within Phase 02.
+**Suggested follow-up:** Run manual MCP smoke test in Obsidian; bump version and tag release.
