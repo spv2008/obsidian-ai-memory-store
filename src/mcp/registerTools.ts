@@ -14,8 +14,16 @@ import {
   type WritePlanInput,
   type WriteSpecificationInput,
 } from "../memory/artifactsWrite";
+import { memoryFind, type FindInput } from "../memory/find";
 import { memoryRecall, type RecallInput } from "../memory/recall";
+import {
+  memoryArchiveTask,
+  memoryStartTask,
+  type ArchiveTaskInput,
+  type StartTaskInput,
+} from "../memory/tasks";
 import { memoryUpsert, type UpsertInput } from "../memory/upsert";
+import { vaultRead, type VaultReadInput } from "../memory/vaultRead";
 import { memoryGetWorkflow, type WorkflowInput } from "../memory/workflow";
 import type { MemoryVaultWriter } from "../memory/vaultWriter";
 import { SERVICE_NAME } from "../constants";
@@ -277,6 +285,89 @@ export function registerMemoryTools(
         deps.vault,
         args as WriteManualTestInput,
       );
+      return textResult(result);
+    },
+  );
+
+  register.tool(
+    "memory_start_task",
+    "Park the active task when needed, write current-task.md, and append an active register row.",
+    {
+      project: z.string(),
+      name: z.string(),
+      goal: z.string(),
+      taskId: z.string().optional(),
+      planLink: z.string().optional(),
+      specLink: z.string().optional(),
+      architectureLink: z.string().optional(),
+      parkCurrentIfActive: z.boolean().optional(),
+    },
+    async (args) => {
+      const result = await memoryStartTask(
+        deps.vault,
+        args as StartTaskInput,
+      );
+      return textResult(result);
+    },
+  );
+
+  register.tool(
+    "memory_archive_task",
+    "Archive current-task.md to tasks/, update the register row, and clear the current task.",
+    {
+      project: z.string(),
+      status: z.enum(["parked", "done", "abandoned"]),
+      slug: z.string(),
+      resumeNotes: z.string().optional(),
+      outcome: z.string().optional(),
+      taskId: z.string().optional(),
+    },
+    async (args) => {
+      const result = await memoryArchiveTask(
+        deps.vault,
+        args as ArchiveTaskInput,
+      );
+      return textResult(result);
+    },
+  );
+
+  const findTypeSchema = z.enum([
+    "decisions",
+    "lessons",
+    "patterns",
+    "tasks",
+    "daily",
+    "specifications",
+    "architecture",
+    "plans",
+    "manual-tests",
+    "all",
+  ]);
+
+  register.tool(
+    "memory_find",
+    "Scoped keyword search under project memory and artifact roots with excerpt-only hits.",
+    {
+      project: z.string(),
+      query: z.string(),
+      types: z.array(findTypeSchema).optional(),
+      maxResults: z.number().optional(),
+      excerptLength: z.number().optional(),
+    },
+    async (args) => {
+      const result = await memoryFind(deps.vault, args as FindInput);
+      return textResult(result);
+    },
+  );
+
+  register.tool(
+    "vault_read",
+    "Read full vault file content when recall excerpts are insufficient.",
+    {
+      path: z.string().describe("Vault-relative file path"),
+    },
+    async (args) => {
+      const result = await vaultRead(deps.vault, args as VaultReadInput);
       return textResult(result);
     },
   );
