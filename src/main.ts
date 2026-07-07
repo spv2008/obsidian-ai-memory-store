@@ -266,121 +266,16 @@ class AiMemoryStoreSettingTab extends PluginSettingTab {
     new Setting(containerEl).setHeading().setName("AI Memory Store");
     new Setting(containerEl).setHeading().setName("MCP connection");
 
-    const apiKeyDiv = containerEl.createDiv();
-    apiKeyDiv.classList.add("api-key-display");
-
-    apiKeyDiv.createEl("p", {
-      // eslint-disable-next-line obsidianmd/ui/sentence-case -- MCP is a proper acronym
-      text: "Connect AI clients to the MCP server using the endpoints below.",
-    });
-
     const addUrlRow = (container: HTMLElement, url: string) => {
       container.createEl("pre", { text: url });
     };
-
-    const connectionUrls = apiKeyDiv.createEl("table", { cls: "api-urls" });
-    const connectionUrlsTbody = connectionUrls.createEl("tbody");
-    const secureTr = connectionUrlsTbody.createEl(
-      "tr",
-      this.plugin.settings.enableSecureServer === false
-        ? {
-            cls: "disabled",
-            title: "Disabled.  You can enable this in 'Settings' below.",
-          }
-        : {
-            title: "Enabled",
-          }
-    );
-    const secureUrl = `https://127.0.0.1:${this.plugin.settings.port}/`;
-
-    secureTr.createEl("td", {
-      text: this.plugin.settings.enableSecureServer === false ? "❌" : "✅",
-    });
-    const secureNameTd = secureTr.createEl("td", { cls: "name" });
-    secureNameTd.createSpan({ text: "Encrypted (HTTPS) server URL" });
-    secureNameTd.createEl("br");
-    secureNameTd.createEl("br");
-    const secureNote = secureNameTd.createEl("i");
-    secureNote.createSpan({ text: "Requires that " });
-    secureNote.createEl("a", {
-      href: `https://127.0.0.1:${this.plugin.settings.port}/${CERT_NAME}`,
-      // eslint-disable-next-line obsidianmd/ui/sentence-case
-      text: "this certificate",
-    });
-    secureNote.createSpan({
-      text: " be configured as a trusted certificate authority for your browser.  See ",
-    });
-    secureNote.createEl("a", {
-      href: "https://github.com/coddingtonbear/obsidian-web/wiki/How-do-I-get-my-browser-trust-my-Obsidian-Local-REST-API-certificate%3F",
-      // eslint-disable-next-line obsidianmd/ui/sentence-case
-      text: "wiki",
-    });
-    secureNote.createSpan({ text: " for more information." });
-
-    const secureUrlsTd = secureTr.createEl("td", { cls: "url" });
-    addUrlRow(secureUrlsTd, secureUrl);
-    if (this.plugin.settings.subjectAltNames) {
-      for (const name of this.plugin.settings.subjectAltNames.split("\n")) {
-        if (name.trim()) {
-          addUrlRow(
-            secureUrlsTd,
-            `https://${name.trim()}:${this.plugin.settings.port}/`
-          );
-        }
-      }
-    }
-
-    const insecureTr = connectionUrlsTbody.createEl(
-      "tr",
-      this.plugin.settings.enableInsecureServer === false
-        ? {
-            cls: "disabled",
-            title: "Disabled.  You can enable this in 'Settings' below.",
-          }
-        : {
-            title: "Enabled",
-          }
-    );
-    const insecureUrl = `http://127.0.0.1:${this.plugin.settings.insecurePort}/`;
-
-    insecureTr.createEl("td", {
-      text: this.plugin.settings.enableInsecureServer === false ? "❌" : "✅",
-    });
-    insecureTr.createEl("td", { cls: "name", text: "Non-encrypted (HTTP) server URL" });
-
-    const insecureUrlsTd = insecureTr.createEl("td", { cls: "url" });
-    addUrlRow(insecureUrlsTd, insecureUrl);
-    if (this.plugin.settings.subjectAltNames) {
-      for (const name of this.plugin.settings.subjectAltNames.split("\n")) {
-        if (name.trim()) {
-          addUrlRow(
-            insecureUrlsTd,
-            `http://${name.trim()}:${this.plugin.settings.insecurePort}/`
-          );
-        }
-      }
-    }
-
-    const authHeaderP = apiKeyDiv.createEl("p");
-    authHeaderP.createSpan({
-      text: "Your API key should be passed as a bearer token via the ",
-    });
-    authHeaderP.createEl("code", {
-      text:
-        this.plugin.settings.authorizationHeaderName ??
-        DefaultBearerTokenHeaderName,
-    });
-    authHeaderP.createSpan({ text: " header:" });
-
-    apiKeyDiv.createEl("pre", {
-      text: `Bearer ${this.plugin.settings.apiKey}`,
-    });
 
     const mcpDiv = containerEl.createDiv();
     mcpDiv.classList.add("mcp-display");
 
     mcpDiv.createEl("p", {
-      text: "You can connect to the MCP server via the following endpoints:",
+      // eslint-disable-next-line obsidianmd/ui/sentence-case -- MCP is a proper acronym
+      text: "Connect AI clients to the MCP server using the endpoints below. Authentication is required for every request.",
     });
 
     const mcpUrls = mcpDiv.createEl("table", { cls: "api-urls" });
@@ -411,17 +306,11 @@ class AiMemoryStoreSettingTab extends PluginSettingTab {
     mcpSecureNote.createEl("a", {
       href: `https://127.0.0.1:${this.plugin.settings.port}/${CERT_NAME}`,
       // eslint-disable-next-line obsidianmd/ui/sentence-case
-      text: "this certificate",
+      text: "the plugin certificate",
     });
     mcpSecureNote.createSpan({
-      text: " be configured as a trusted certificate authority.  See ",
+      text: " be trusted by your MCP client. See README → HTTPS certificate trust for setup steps.",
     });
-    mcpSecureNote.createEl("a", {
-      href: "https://github.com/coddingtonbear/obsidian-web/wiki/How-do-I-get-my-browser-trust-my-Obsidian-Local-REST-API-certificate%3F",
-      // eslint-disable-next-line obsidianmd/ui/sentence-case
-      text: "wiki",
-    });
-    mcpSecureNote.createSpan({ text: " for more information." });
 
     const mcpSecureUrlsTd = mcpSecureTr.createEl("td", { cls: "url" });
     addUrlRow(mcpSecureUrlsTd, mcpSecureUrl);
@@ -464,6 +353,14 @@ class AiMemoryStoreSettingTab extends PluginSettingTab {
     mcpDiv.createEl("pre", {
       text: `Bearer ${this.plugin.settings.apiKey}`,
     });
+    new Setting(mcpDiv)
+      .setName("Copy API key")
+      .setDesc("Copy the bearer token value for MCP client configuration.")
+      .addButton((btn) => {
+        btn.setButtonText("Copy").onClick(() => {
+          void navigator.clipboard.writeText(this.plugin.settings.apiKey ?? "");
+        });
+      });
     const mcpSampleConfig = JSON.stringify(
       {
         mcpServers: {
@@ -493,25 +390,25 @@ class AiMemoryStoreSettingTab extends PluginSettingTab {
     new Setting(containerEl).setHeading().setName("Settings");
 
     if (remainingCertificateValidityDays && remainingCertificateValidityDays < 0) {
-      const expiredCertDiv = apiKeyDiv.createDiv();
+      const expiredCertDiv = mcpDiv.createDiv();
       expiredCertDiv.classList.add("certificate-expired");
       expiredCertDiv.createEl("b", { text: "Your certificate has expired!" });
       expiredCertDiv.createSpan({
-        text: ' You must re-generate your certificate below by pressing the "Re-generate Certificates" button below in order to connect securely to this API.',
+        text: ' Re-generate your certificate below using "Re-generate Certificates" to connect securely to the MCP server.',
       });
     } else if (remainingCertificateValidityDays &&remainingCertificateValidityDays < 30) {
-      const soonExpiringCertDiv = apiKeyDiv.createDiv();
+      const soonExpiringCertDiv = mcpDiv.createDiv();
       soonExpiringCertDiv.classList.add("certificate-expiring-soon");
       const daysRemaining = Math.floor(remainingCertificateValidityDays);
       soonExpiringCertDiv.createEl("b", {
         text: `Your certificate will expire in ${daysRemaining} day${daysRemaining === 1 ? "" : "s"}!`,
       });
       soonExpiringCertDiv.createSpan({
-        text: ' You should re-generate your certificate below by pressing the "Re-generate Certificates" button below in order to continue to connect securely to this API.',
+        text: ' Re-generate your certificate below using "Re-generate Certificates" to keep HTTPS MCP connections working.',
       });
     }
     if (shouldRegenerateCertificate) {
-      const shouldRegenerateCertificateDiv = apiKeyDiv.createDiv();
+      const shouldRegenerateCertificateDiv = mcpDiv.createDiv();
       shouldRegenerateCertificateDiv.classList.add(
         "certificate-regeneration-recommended"
       );
@@ -526,7 +423,7 @@ class AiMemoryStoreSettingTab extends PluginSettingTab {
     new Setting(containerEl)
       .setName("Enable non-encrypted (HTTP) server")
       .setDesc(
-        "Enables a non-encrypted (HTTP) server on the port designated below.  By default this plugin requires a secure HTTPS connection, but in safe environments you may turn on the non-encrypted server to simplify interacting with the API. Interactions with the API will still require the API key shown above.  Under no circumstances is it recommended that you expose this service to the internet, especially if you turn on this feature!"
+        "Enables a local HTTP MCP server on the port below. HTTPS remains the recommended default. The API key is still required. Do not expose this service to the internet."
       )
       .addToggle((cb) =>
         cb
@@ -541,6 +438,77 @@ class AiMemoryStoreSettingTab extends PluginSettingTab {
             }
           })
           .setValue(this.plugin.settings.enableInsecureServer)
+      );
+
+    new Setting(containerEl)
+      .setName("Encrypted (HTTPS) MCP port")
+      .setDesc(
+        "Port for the HTTPS MCP server. MCP clients usually expect the default 27124."
+      )
+      .addText((cb) =>
+        cb
+          .onChange((value) => {
+            this.plugin.settings.port = parseInt(value, 10);
+            void this.plugin.saveSettings();
+            this.plugin.refreshServerState();
+            this.display();
+          })
+          .setValue(this.plugin.settings.port.toString())
+      );
+
+    new Setting(containerEl)
+      .setName("Non-encrypted (HTTP) MCP port")
+      .setDesc("Port for the optional HTTP MCP server.")
+      .addText((cb) =>
+        cb
+          .onChange((value) => {
+            this.plugin.settings.insecurePort = parseInt(value, 10);
+            void this.plugin.saveSettings();
+            this.plugin.refreshServerState();
+            this.display();
+          })
+          .setValue(this.plugin.settings.insecurePort.toString())
+      );
+
+    new Setting(containerEl)
+      .setName("Binding host")
+      .setDesc("Network interface to bind. Use 127.0.0.1 for local-only access.")
+      .addText((cb) => {
+        cb.onChange((value) => {
+          if (value !== DefaultBindingHost) {
+            this.plugin.settings.bindingHost = value;
+          } else {
+            delete this.plugin.settings.bindingHost;
+          }
+          void this.plugin.saveSettings();
+          this.plugin.refreshServerState();
+        }).setValue(this.plugin.settings.bindingHost ?? DefaultBindingHost);
+      });
+
+    new Setting(containerEl)
+      .setName("API key")
+      // eslint-disable-next-line obsidianmd/ui/sentence-case -- MCP is a proper acronym
+      .setDesc("Bearer token required by MCP clients. Regenerate via Reset all cryptography.")
+      .addText((cb) => {
+        cb.onChange((value) => {
+          this.plugin.settings.apiKey = value;
+          void this.plugin.saveSettings();
+          this.plugin.refreshServerState();
+        }).setValue(this.plugin.settings.apiKey ?? "");
+      });
+
+    new Setting(containerEl)
+      .setName("Enable verbose logging")
+      .setDesc(
+        "Log server startup and one-line access log entries to the developer console."
+      )
+      .addToggle((cb) =>
+        cb
+          .onChange((value) => {
+            this.plugin.settings.enableVerboseLogging = value || undefined;
+            void this.plugin.saveSettings();
+          })
+          .setValue(this.plugin.settings.enableVerboseLogging ?? false)
       );
 
     new Setting(containerEl)
@@ -658,40 +626,6 @@ class AiMemoryStoreSettingTab extends PluginSettingTab {
         );
 
       new Setting(containerEl)
-        .setName("Encrypted (HTTPS) server port")
-        .setDesc(
-          "This configures the port on which the HTTPS MCP server listens. It is recommended that you leave this port with its default setting as tools integrating with this server may expect the default port to be in use. Under no circumstances is it recommended that you expose this service directly to the internet."
-        )
-        .addText((cb) =>
-          cb
-            .onChange((value) => {
-              this.plugin.settings.port = parseInt(value, 10);
-              void this.plugin.saveSettings();
-              this.plugin.refreshServerState();
-            })
-            .setValue(this.plugin.settings.port.toString())
-        );
-
-      new Setting(containerEl)
-        .setName("Non-encrypted (HTTP) server port")
-        .addText((cb) =>
-          cb
-            .onChange((value) => {
-              this.plugin.settings.insecurePort = parseInt(value, 10);
-              void this.plugin.saveSettings();
-              this.plugin.refreshServerState();
-            })
-            .setValue(this.plugin.settings.insecurePort.toString())
-        );
-
-      new Setting(containerEl).setName("API key").addText((cb) => {
-        cb.onChange((value) => {
-          this.plugin.settings.apiKey = value;
-          void this.plugin.saveSettings();
-          this.plugin.refreshServerState();
-        }).setValue(this.plugin.settings.apiKey ?? "");
-      });
-      new Setting(containerEl)
         .setName("Certificate hostnames")
         .setDesc(
           `
@@ -749,35 +683,11 @@ class AiMemoryStoreSettingTab extends PluginSettingTab {
           }
           void this.plugin.saveSettings();
           this.plugin.refreshServerState();
-        }).setValue(
+        }        ).setValue(
           this.plugin.settings.authorizationHeaderName ??
             DefaultBearerTokenHeaderName
         );
       });
-      new Setting(containerEl).setName("Binding host").addText((cb) => {
-        cb.onChange((value) => {
-          if (value !== DefaultBindingHost) {
-            this.plugin.settings.bindingHost = value;
-          } else {
-            delete this.plugin.settings.bindingHost;
-          }
-          void this.plugin.saveSettings();
-          this.plugin.refreshServerState();
-        }).setValue(this.plugin.settings.bindingHost ?? DefaultBindingHost);
-      });
-      new Setting(containerEl)
-        .setName("Enable verbose logging")
-        .setDesc(
-          "When enabled, logs server startup messages and a one-line access log entry for every request to the browser console."
-        )
-        .addToggle((cb) =>
-          cb
-            .onChange((value) => {
-              this.plugin.settings.enableVerboseLogging = value || undefined;
-              void this.plugin.saveSettings();
-            })
-            .setValue(this.plugin.settings.enableVerboseLogging ?? false)
-        );
     }
   }
 }
