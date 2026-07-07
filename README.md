@@ -66,6 +66,10 @@ claude mcp add --transport http obsidian-ai-memory-store https://127.0.0.1:27124
 | `memory_write_architecture` | Write `architecture/{task-id}-{feature}/proposal.md` |
 | `memory_write_plan` | Write `plans/{task-id}-{description}/master-plan.md` or a phase file |
 | `memory_write_manual_test` | Write `manual-test-plans/{feature}/plan.md` or `insomnia.json` |
+| `memory_start_task` | Park active task if needed, write `current-task.md`, append register row |
+| `memory_archive_task` | Archive `current-task.md` to `tasks/`, update register, clear current task |
+| `memory_find` | Scoped keyword search with excerpt-only hits |
+| `vault_read` | Full file read when recall excerpts are insufficient |
 
 ## Development
 

@@ -78,9 +78,13 @@ describe("McpHandler", () => {
         "memory_write_architecture",
         "memory_write_plan",
         "memory_write_manual_test",
+        "memory_start_task",
+        "memory_archive_task",
+        "memory_find",
+        "vault_read",
       ]),
     );
-    expect(toolNames).toHaveLength(10);
+    expect(toolNames).toHaveLength(14);
   });
 
   test("memory_status returns ok payload", async () => {
@@ -193,6 +197,66 @@ describe("McpHandler", () => {
     expect(payload.specification?.path).toBe(
       "specifications/TASK-500-handler-e2e/spec.md",
     );
+  });
+
+  test("memory_start_task and memory_archive_task manage lifecycle state", async () => {
+    const vault = new MapVaultWriter({
+      "memory/projects/demo/tasks/tasks-index.md": [
+        "# Task Register: demo",
+        "",
+        "| Task | Started | Finished | Status | Outcome | Note |",
+        "|---|---|---|---|---|---|",
+        "",
+      ].join("\n"),
+      "memory/projects/demo/short-term/current-task.md":
+        "# Current Task\n\n**Goal**: \n\n## Following\n\n## Sub-tasks\n\n",
+    });
+    const mcp = new McpHandler(null, TEST_MANIFEST, DEFAULT_SETTINGS, {
+      vault,
+    });
+
+    await mcp.invokeToolForTest("memory_start_task", {
+      project: "demo",
+      name: "Handler lifecycle task",
+      goal: "Verify MCP task tools",
+    });
+    const archive = await mcp.invokeToolForTest("memory_archive_task", {
+      project: "demo",
+      status: "done",
+      slug: "handler-lifecycle-task",
+      outcome: "Verified through handler",
+    });
+    const payload = JSON.parse(archive.content[0].text) as {
+      archivePath: string;
+    };
+    expect(payload.archivePath).toContain("handler-lifecycle-task");
+    const bootstrap = await mcp.invokeToolForTest("memory_bootstrap", {
+      project: "demo",
+    });
+    const bootstrapPayload = JSON.parse(bootstrap.content[0].text) as {
+      activeTask: { name: string } | null;
+    };
+    expect(bootstrapPayload.activeTask).toBeNull();
+  });
+
+  test("memory_find and vault_read return scoped search and full content", async () => {
+    const mcp = makeHandler();
+    const find = await mcp.invokeToolForTest("memory_find", {
+      project: "demo",
+      query: "excerpt-only recall",
+      types: ["decisions"],
+    });
+    const findPayload = JSON.parse(find.content[0].text) as {
+      hits: Array<{ path: string }>;
+    };
+    expect(findPayload.hits.length).toBeGreaterThan(0);
+    const read = await mcp.invokeToolForTest("vault_read", {
+      path: findPayload.hits[0].path,
+    });
+    const readPayload = JSON.parse(read.content[0].text) as {
+      content: string;
+    };
+    expect(readPayload.content).toContain("Use excerpt-only recall");
   });
 
   test("routes subsequent requests to existing session transport", async () => {

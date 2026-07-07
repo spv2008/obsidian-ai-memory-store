@@ -52,6 +52,10 @@ describe("MCP memory tools", () => {
         "memory_write_architecture",
         "memory_write_plan",
         "memory_write_manual_test",
+        "memory_start_task",
+        "memory_archive_task",
+        "memory_find",
+        "vault_read",
       ]),
     );
   });
