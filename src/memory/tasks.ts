@@ -69,6 +69,12 @@ export function slugifyTaskName(name: string): string {
   return slug || "task";
 }
 
+export function goalFromCurrentTask(content: string): string | null {
+  const match = /^\*\*Goal\*\*:[ \t]*(.*)$/m.exec(content);
+  const text = match?.[1]?.trim();
+  return text || null;
+}
+
 export function isCurrentTaskEmpty(content: string | null): boolean {
   if (!content?.trim()) {
     return true;
@@ -77,8 +83,7 @@ export function isCurrentTaskEmpty(content: string | null): boolean {
   if (normalized === EMPTY_CURRENT_TASK.trim()) {
     return true;
   }
-  const goal = /\*\*Goal\*\*:\s*(.+)/m.exec(normalized);
-  return !goal?.[1]?.trim();
+  return !goalFromCurrentTask(normalized);
 }
 
 function formatWikilink(link: string): string {
@@ -116,6 +121,10 @@ function archiveNoteLink(date: string, slug: string, taskId?: string): string {
   return taskId ? `[[${date}-${slug}-${taskId}]]` : `[[${date}-${slug}]]`;
 }
 
+function yamlQuotedValue(value: string): string {
+  return JSON.stringify(value);
+}
+
 function buildArchivedTaskNote(
   currentContent: string,
   input: ArchiveTaskInput & { started: string; finished?: string },
@@ -128,8 +137,10 @@ function buildArchivedTaskNote(
     `status: ${input.status}`,
     `started: ${input.started}`,
     ...(finished ? [`finished: ${finished}`] : []),
-    ...(input.taskId ? [`task-id: ${input.taskId}`] : []),
-    ...(input.resumeNotes ? [`resume-notes: ${input.resumeNotes}`] : []),
+    ...(input.taskId ? [`task-id: ${yamlQuotedValue(input.taskId)}`] : []),
+    ...(input.resumeNotes
+      ? [`resume-notes: ${yamlQuotedValue(input.resumeNotes)}`]
+      : []),
     "---",
     "",
     currentContent.trim(),
@@ -168,8 +179,7 @@ function registerRowForTask(
 }
 
 function taskNameFromCurrentTask(content: string): string | null {
-  const goal = /\*\*Goal\*\*:\s*(.+)/.exec(content);
-  return goal?.[1]?.trim() || null;
+  return goalFromCurrentTask(content);
 }
 
 export async function memoryArchiveTask(
@@ -215,8 +225,8 @@ export async function memoryArchiveTask(
   const finishedDate = input.status === "parked" ? "" : archiveDate;
   const updatedIndex = updateRegisterRow(
     indexContent,
-    "Task",
-    activeTask.name,
+    "Status",
+    "active",
     (record) => {
       const cells = [...record.cells];
       cells[2] = finishedDate;

@@ -2,6 +2,7 @@ import {
   memoryArchiveTask,
   memoryStartTask,
   buildCurrentTaskMarkdown,
+  goalFromCurrentTask,
   isCurrentTaskEmpty,
   EMPTY_CURRENT_TASK,
   slugifyTaskName,
@@ -90,6 +91,35 @@ describe("memoryArchiveTask", () => {
     expect(index).toContain(`[[${archiveDate}-memory-read-tools]]`);
   });
 
+  test("updates the active register row when older rows share the task name", async () => {
+    const writer = new MapVaultWriter({
+      ...loadFixtureVault("demo"),
+      "memory/projects/demo/tasks/tasks-index.md": [
+        "# Task Register: demo",
+        "",
+        "| Task | Started | Finished | Status | Outcome | Note |",
+        "|---|---|---|---|---|---|",
+        "| Implement memory read tools | 2026-01-01 | 2026-01-02 | done | Shipped | [[2026-01-02-old]] |",
+        "| Implement memory read tools | 2026-07-06 | | active | | |",
+        "",
+      ].join("\n"),
+    });
+
+    await memoryArchiveTask(writer, {
+      project: "demo",
+      status: "done",
+      slug: "memory-read-tools",
+      outcome: "Current active task finished",
+    });
+
+    const index = await writer.read("memory/projects/demo/tasks/tasks-index.md");
+    expect(index).toContain(
+      "| Implement memory read tools | 2026-01-01 | 2026-01-02 | done | Shipped | [[2026-01-02-old]] |",
+    );
+    expect(index).toContain("Current active task finished");
+    expect(index).toContain("| done |");
+  });
+
   test("archives the current task as parked with resume notes", async () => {
     const writer = new MapVaultWriter({ ...loadFixtureVault("demo") });
     const archiveDate = todayIsoDate();
@@ -97,12 +127,12 @@ describe("memoryArchiveTask", () => {
       project: "demo",
       status: "parked",
       slug: "memory-read-tools",
-      resumeNotes: "Resume after write path lands",
+      resumeNotes: "Line one\n# not a heading: value",
     });
 
     const archived = await writer.read(result.archivePath);
+    expect(archived).toContain('resume-notes: "Line one\\n# not a heading: value"');
     expect(archived).toContain("status: parked");
-    expect(archived).toContain("resume-notes: Resume after write path lands");
     expect(archived).not.toContain("finished:");
     const index = await writer.read(result.registerPath);
     expect(index).toContain("| parked |");
@@ -128,6 +158,20 @@ describe("task helpers", () => {
     expect(slugifyTaskName("Implement memory read tools")).toBe(
       "implement-memory-read-tools",
     );
+  });
+
+  test("treats blank goal lines as empty even with following sections", () => {
+    const content = `# Current Task
+
+**Goal**:
+
+## Following
+- Spec: [[specifications/TASK-1/spec]]
+
+## Sub-tasks
+`;
+    expect(isCurrentTaskEmpty(content)).toBe(true);
+    expect(goalFromCurrentTask(content)).toBeNull();
   });
 });
 

@@ -1,4 +1,4 @@
-import { excerpt } from "./excerpt";
+import { capExcerptLength, excerpt } from "./excerpt";
 import {
   projectMemoryPrefix,
   projectRelativePath,
@@ -50,8 +50,13 @@ export interface FindResult {
 }
 
 const DEFAULT_MAX_RESULTS = 10;
+const MAX_FIND_RESULTS = 50;
 const DEFAULT_FIND_EXCERPT_LENGTH = 120;
 const FIND_CONTEXT_PADDING = 40;
+
+function capMaxResults(maxResults?: number): number {
+  return Math.min(Math.max(maxResults ?? DEFAULT_MAX_RESULTS, 1), MAX_FIND_RESULTS);
+}
 
 const PROJECT_TYPE_PATHS: Record<
   Exclude<FindType, "all" | "specifications" | "architecture" | "plans" | "manual-tests">,
@@ -192,8 +197,10 @@ export async function memoryFind(
   input: FindInput,
 ): Promise<FindResult> {
   const types = normalizeTypes(input.types);
-  const maxResults = Math.max(1, input.maxResults ?? DEFAULT_MAX_RESULTS);
-  const excerptLength = input.excerptLength ?? DEFAULT_FIND_EXCERPT_LENGTH;
+  const maxResults = capMaxResults(input.maxResults);
+  const excerptLength = capExcerptLength(
+    input.excerptLength ?? DEFAULT_FIND_EXCERPT_LENGTH,
+  );
   const allPaths = await reader.listPaths();
   const hits: FindHit[] = [];
 

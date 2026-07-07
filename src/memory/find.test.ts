@@ -58,4 +58,19 @@ describe("memoryFind", () => {
       expect(hit.excerpt.length).toBeLessThanOrEqual(120);
     }
   });
+
+  test("caps maxResults and excerptLength", async () => {
+    const result = await memoryFind(demoVault, {
+      project: "demo",
+      query: "memory",
+      types: ["all"],
+      maxResults: 500,
+      excerptLength: 5000,
+    });
+
+    expect(result.hits.length).toBeLessThanOrEqual(50);
+    for (const hit of result.hits) {
+      expect(hit.excerpt.length).toBeLessThanOrEqual(2000);
+    }
+  });
 });
