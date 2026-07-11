@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      {
+        "type": "command",
+        "powershell": "%USERPROFILE%\\.config\\obsidian-ai-memory-store\\memory-session-hook.ps1",
+        "timeoutSec": 15
+      }
+    ]
+  }
+}

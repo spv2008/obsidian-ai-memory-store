@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      {
+        "command": "powershell -NoProfile -ExecutionPolicy Bypass -File %USERPROFILE%\\.config\\obsidian-ai-memory-store\\memory-session-hook.ps1"
+      }
+    ]
+  }
+}

@@ -3,7 +3,7 @@
 ## Metadata
 
 Task ID: N/A  
-Status: Complete  
+Status: Complete (v1); Phase 07 planned  
 Plugin ID: `obsidian-ai-memory-store`  
 Repo: `obsidian-ai-memory-store`
 
@@ -100,20 +100,23 @@ src/
     └── types.ts
 ```
 
-## Memory Schema v1
+## Memory Schema v1.1
 
 ```
-memory/projects/{project}/
-  short-term/current-task.md
-  short-term/conversation.context.md
-  tasks/tasks-index.md
-  tasks/YYYY-MM-DD-{slug}[-{task-id}].md
-  long-term/decisions-index.md
-  long-term/decisions/YYYY-MM-DD-{slug}.md
-  long-term/code-patterns.md
-  long-term/lessons-learned.md
-  long-term/tools-reference.md
-  daily/YYYY-MM-DD.md
+memory/
+  short-term/                                 # ONLY short-term (global desk)
+    current-task.md
+    conversation.context.md
+
+  projects/{namespace}/                       # DURABLE ONLY (no short-term)
+    tasks/tasks-index.md
+    tasks/YYYY-MM-DD-{slug}[-{task-id}].md
+    long-term/decisions-index.md
+    long-term/decisions/YYYY-MM-DD-{slug}.md
+    long-term/code-patterns.md
+    long-term/lessons-learned.md
+    long-term/tools-reference.md
+    daily/YYYY-MM-DD.md
 
 specifications/{task-id}-{feature-name}/spec.md
 architecture/{task-id}-{feature-name}/proposal.md
@@ -123,7 +126,15 @@ manual-test-plans/{feature-name}/plan.md
 manual-test-plans/{feature-name}/insomnia.json
 ```
 
-**Correlation:** `task-id` links spec, architecture, and plans. `feature-name` links manual-test-plans (server infers from sibling folders when possible).
+**Profiles (same schema):**
+
+| Profile | Desk | Durable namespace |
+|---|---|---|
+| Platform (work) | Always `memory/short-term/` | One (`defaultProject`, e.g. `platform`) |
+| Multi-repo (home) | Always `memory/short-term/` | From cwd map / `OBSIDIAN_MEMORY_PROJECT` |
+
+**Settings:** `defaultProject`. Session baseline includes linked artifacts from current-task wikilinks.  
+**Detail:** [07-session-hook-and-query-workflow.md](07-session-hook-and-query-workflow.md)
 
 ## MCP Tool Surface (v1)
 
@@ -131,8 +142,9 @@ manual-test-plans/{feature-name}/insomnia.json
 
 | Tool | Purpose |
 |---|---|
-| `memory_bootstrap` | Session start: project memory + linked artifacts from `current-task.md` |
-| `memory_recall` | Ranked, excerpt-only retrieval across memory + artifacts |
+| `memory_bootstrap` | Full project snapshot (refresh / non-hook clients) |
+| `memory_session_context` | Global desk + linked activeWork + optional daily for namespace *(Phase 07)* |
+| `memory_recall` | Ranked, excerpt-only retrieval — **use for decisions and tasks by keyword/area** |
 | `memory_get_workflow` | Task-id → spec / architecture / plan / manual-test chain |
 | `memory_find` | Scoped keyword fallback |
 
@@ -201,11 +213,11 @@ manual-test-plans/{feature-name}/insomnia.json
   - File: [05-tasks-and-find.md](05-tasks-and-find.md)
 - [x] Phase 06: Settings, docs, and skill alignment
   - File: [06-polish-and-docs.md](06-polish-and-docs.md)
+- [x] Phase 07: Global session, durable namespaces, hooks, query-on-demand
+  - File: [07-session-hook-and-query-workflow.md](07-session-hook-and-query-workflow.md)
 
 ## Execution Handoff
 
-**Status:** v1 MCP tool surface complete. All six delivery phases implemented.
+**Status:** Phase 07 implemented on branch `phase-07-global-session` (Schema v1.1).
 
-**Next recommended action:** Release prep per [AGENTS.md](../../AGENTS.md) when ready to ship.
-
-**Suggested follow-up:** Run manual MCP smoke test in Obsidian; bump version and tag release.
+**Next recommended action:** Merge Phase 07 PR; update local `obsidian-memory` skill; release prep when ready.
