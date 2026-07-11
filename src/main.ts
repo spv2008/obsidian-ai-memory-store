@@ -465,7 +465,7 @@ class AiMemoryStoreSettingTab extends PluginSettingTab {
     new Setting(containerEl)
       .setName("Encrypted (HTTPS) MCP port")
       .setDesc(
-        "Port for the HTTPS MCP server. MCP clients usually expect the default 27124."
+        "Port for the HTTPS MCP server. Default 27126 (27124 is local REST API)."
       )
       .addText((cb) =>
         cb
@@ -513,6 +513,23 @@ class AiMemoryStoreSettingTab extends PluginSettingTab {
           void this.plugin.saveSettings();
           this.plugin.refreshServerState();
         }).setValue(this.plugin.settings.bindingHost ?? DefaultBindingHost);
+      });
+
+    new Setting(containerEl)
+      .setName("Default project")
+      .setDesc(
+        "Durable namespace under memory/projects/ when tools omit project. Used for daily logs and task registers."
+      )
+      .addText((cb) => {
+        cb.onChange((value) => {
+          const trimmed = value.trim();
+          if (trimmed) {
+            this.plugin.settings.defaultProject = trimmed;
+          } else {
+            delete this.plugin.settings.defaultProject;
+          }
+          void this.plugin.saveSettings();
+        }).setValue(this.plugin.settings.defaultProject ?? "");
       });
 
     new Setting(containerEl)

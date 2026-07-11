@@ -70,6 +70,7 @@ describe("McpHandler", () => {
       expect.arrayContaining([
         "memory_status",
         "memory_bootstrap",
+        "memory_session_context",
         "memory_recall",
         "memory_get_workflow",
         "memory_upsert",
@@ -84,7 +85,7 @@ describe("McpHandler", () => {
         "vault_read",
       ]),
     );
-    expect(toolNames).toHaveLength(14);
+    expect(toolNames).toHaveLength(15);
   });
 
   test("memory_status returns ok payload", async () => {
@@ -208,7 +209,7 @@ describe("McpHandler", () => {
         "|---|---|---|---|---|---|",
         "",
       ].join("\n"),
-      "memory/projects/demo/short-term/current-task.md":
+      "memory/short-term/current-task.md":
         "# Current Task\n\n**Goal**: \n\n## Following\n\n## Sub-tasks\n\n",
     });
     const mcp = new McpHandler(null, TEST_MANIFEST, DEFAULT_SETTINGS, {

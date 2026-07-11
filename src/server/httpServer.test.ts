@@ -82,6 +82,11 @@ describe("HttpServer", () => {
     const res = await invoke(server.api, "GET", "/mcp/");
     expect(res.status).toBe(401);
   });
+
+  test("GET /memory/session-context requires authentication", async () => {
+    const res = await invoke(server.api, "GET", "/memory/session-context");
+    expect(res.status).toBe(401);
+  });
 });
 
 async function invoke(
