@@ -25,13 +25,14 @@ describe("memory paths", () => {
     expect(projectRoot(project)).toBe("memory/projects/my-app");
   });
 
+  test("global short-term paths", () => {
+    expect(conversationContextPath()).toBe(
+      "memory/short-term/conversation.context.md",
+    );
+    expect(currentTaskPath()).toBe("memory/short-term/current-task.md");
+  });
+
   test("project memory paths", () => {
-    expect(conversationContextPath(project)).toBe(
-      "memory/projects/my-app/short-term/conversation.context.md",
-    );
-    expect(currentTaskPath(project)).toBe(
-      "memory/projects/my-app/short-term/current-task.md",
-    );
     expect(tasksIndexPath(project)).toBe(
       "memory/projects/my-app/tasks/tasks-index.md",
     );

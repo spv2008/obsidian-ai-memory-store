@@ -8,8 +8,9 @@ describe("memoryBootstrap", () => {
   test("returns projectExists false for unknown project", async () => {
     const result = await memoryBootstrap(demoVault, { project: "missing" });
     expect(result.projectExists).toBe(false);
-    expect(result.conversationContext).toBeNull();
-    expect(result.activeWork).toEqual([]);
+    // Global short-term desk is still loaded
+    expect(result.conversationContext).toContain("vault parsers");
+    expect(result.currentTask).toContain("memory read tools");
   });
 
   test("loads full project bundle for demo fixture", async () => {

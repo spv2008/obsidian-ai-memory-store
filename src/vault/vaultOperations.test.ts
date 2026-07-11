@@ -49,14 +49,14 @@ describe("VaultOperations", () => {
   test("listVaultDirectory returns immediate children", async () => {
     const app = buildApp();
     const a = new TFile();
-    a.path = "memory/projects/demo/short-term/current-task.md";
+    a.path = "memory/projects/demo/daily/2026-07-06.md";
     const b = new TFile();
     b.path = "memory/projects/demo/tasks/tasks-index.md";
     app.vault._files = [a, b];
     const vault = new VaultOperations(app);
 
     const entries = await vault.listVaultDirectory("memory/projects/demo");
-    expect(entries).toEqual(["short-term/", "tasks/"]);
+    expect(entries).toEqual(["daily/", "tasks/"]);
   });
 
   test("deleteVaultFile throws FileNotFoundError when missing", async () => {

@@ -265,7 +265,7 @@ export async function recallProjectMemory(
   const prefix = projectMemoryPrefix(input.project);
 
   if (sources.includes("context")) {
-    const path = conversationContextPath(input.project);
+    const path = conversationContextPath();
     const content = await reader.read(path);
     if (content) {
       const score = scoreRecallHit({

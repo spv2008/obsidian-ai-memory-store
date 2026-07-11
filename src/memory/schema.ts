@@ -1,9 +1,16 @@
-/** Memory Schema v1 — folder and file names (hardcoded for v1). */
+/** Memory Schema v1.1 — folder and file names (hardcoded). */
 
 export const MEMORY_ROOT = "memory/projects";
 
+/** Global short-term desk (current task + conversation). */
+export const SHORT_TERM_ROOT = "memory/short-term";
+
+export const SHORT_TERM_FILES = {
+  currentTask: "current-task.md",
+  conversationContext: "conversation.context.md",
+} as const;
+
 export const PROJECT_SUBDIRS = {
-  shortTerm: "short-term",
   tasks: "tasks",
   longTerm: "long-term",
   decisions: "long-term/decisions",
@@ -11,8 +18,6 @@ export const PROJECT_SUBDIRS = {
 } as const;
 
 export const PROJECT_FILES = {
-  currentTask: "short-term/current-task.md",
-  conversationContext: "short-term/conversation.context.md",
   tasksIndex: "tasks/tasks-index.md",
   decisionsIndex: "long-term/decisions-index.md",
   codePatterns: "long-term/code-patterns.md",

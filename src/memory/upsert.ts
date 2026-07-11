@@ -1,5 +1,6 @@
 import { findSection } from "./parse/sections";
-import { projectRelativePath } from "./paths";
+import { conversationContextPath, currentTaskPath, projectRelativePath } from "./paths";
+import { SHORT_TERM_FILES } from "./schema";
 import type { MemoryVaultWriter } from "./vaultWriter";
 
 export type UpsertMode =
@@ -9,13 +10,16 @@ export type UpsertMode =
   | "replace_section";
 
 export interface UpsertInput {
-  project: string;
+  /** Required unless shortTerm is true. */
+  project?: string;
   relativePath: string;
   mode: UpsertMode;
   content: string;
   target?: string;
   createTargetIfMissing?: boolean;
   dedupeKey?: string;
+  /** When true, write under memory/short-term/ (global desk). */
+  shortTerm?: boolean;
 }
 
 export interface UpsertResult {
@@ -88,11 +92,32 @@ async function appendSectionWithDedupe(
   return { created: false, deduped: false };
 }
 
+function resolveUpsertPath(input: UpsertInput): string {
+  if (input.shortTerm) {
+    const normalized = input.relativePath.replace(/\\/g, "/").replace(/^\/+/, "");
+    if (
+      normalized === SHORT_TERM_FILES.conversationContext ||
+      normalized === SHORT_TERM_FILES.currentTask
+    ) {
+      return normalized === SHORT_TERM_FILES.currentTask
+        ? currentTaskPath()
+        : conversationContextPath();
+    }
+    throw new Error(
+      `shortTerm upsert only allows ${SHORT_TERM_FILES.conversationContext} or ${SHORT_TERM_FILES.currentTask}`,
+    );
+  }
+  if (!input.project?.trim()) {
+    throw new Error("project is required unless shortTerm is true");
+  }
+  return projectRelativePath(input.project, input.relativePath);
+}
+
 export async function memoryUpsert(
   writer: MemoryVaultWriter,
   input: UpsertInput,
 ): Promise<UpsertResult> {
-  const path = projectRelativePath(input.project, input.relativePath);
+  const path = resolveUpsertPath(input);
   const existed = await writer.exists(path);
 
   switch (input.mode) {

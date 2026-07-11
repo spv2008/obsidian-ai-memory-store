@@ -186,7 +186,7 @@ export async function memoryArchiveTask(
   writer: MemoryVaultWriter,
   input: ArchiveTaskInput,
 ): Promise<ArchiveTaskResult> {
-  const currentPath = currentTaskPath(input.project);
+  const currentPath = currentTaskPath();
   const currentContent = await writer.read(currentPath);
   if (isCurrentTaskEmpty(currentContent)) {
     throw new CurrentTaskEmptyError("current-task.md is empty");
@@ -246,7 +246,7 @@ export async function memoryStartTask(
   writer: MemoryVaultWriter,
   input: StartTaskInput,
 ): Promise<StartTaskResult> {
-  const currentPath = currentTaskPath(input.project);
+  const currentPath = currentTaskPath();
   const indexPath = tasksIndexPath(input.project);
   const parkCurrent = input.parkCurrentIfActive ?? true;
   let parkedArchivePath: string | undefined;

@@ -7,8 +7,8 @@ export const SERVICE_NAME = "Obsidian AI Memory Store";
 export const BUILT_IN_ROUTES = ["/", `/${CERT_NAME}`];
 
 export const DEFAULT_SETTINGS: LocalRestApiSettings = {
-  port: 27124,
-  insecurePort: 27123,
+  port: 27126,
+  insecurePort: 27127,
   enableInsecureServer: false,
 };
 

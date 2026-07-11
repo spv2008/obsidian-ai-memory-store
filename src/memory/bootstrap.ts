@@ -56,7 +56,7 @@ export interface BootstrapResult {
   activeWork: ActiveWorkItem[];
 }
 
-async function findLatestDaily(
+export async function findLatestDaily(
   reader: MemoryVaultReader,
   project: string,
   allPaths: string[],
@@ -84,7 +84,7 @@ async function findLatestDaily(
   return { date, path: filePath, content: excerpt(content, excerptLength) };
 }
 
-async function buildActiveWork(
+export async function buildActiveWork(
   reader: MemoryVaultReader,
   currentTask: string | null,
   allPaths: string[],
@@ -129,8 +129,8 @@ export async function memoryBootstrap(
     tasksIndex,
     decisionsIndex,
   ] = await Promise.all([
-    reader.read(conversationContextPath(input.project)),
-    reader.read(currentTaskPath(input.project)),
+    reader.read(conversationContextPath()),
+    reader.read(currentTaskPath()),
     reader.read(tasksIndexPath(input.project)),
     reader.read(decisionsIndexPath(input.project)),
   ]);
