@@ -62,8 +62,17 @@ export class McpHandler {
         tool: (name, description, schema, callback) =>
           this.tool(name, description, schema, callback),
       },
-      { vault: this.vault, manifest: this.manifest },
+      {
+        vault: this.vault,
+        manifest: this.manifest,
+        getDefaultProject: () => this.settings.defaultProject,
+      },
     );
+  }
+
+  /** Exposed for HTTP session-context route. */
+  getVault(): MemoryVaultWriter {
+    return this.vault;
   }
 
   private buildServer(): {

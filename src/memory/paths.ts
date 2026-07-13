@@ -7,6 +7,8 @@ import {
   MEMORY_ROOT,
   PROJECT_FILES,
   PROJECT_SUBDIRS,
+  SHORT_TERM_FILES,
+  SHORT_TERM_ROOT,
 } from "./schema";
 
 export class InvalidMemoryPathError extends Error {}
@@ -17,6 +19,16 @@ function normalizeSegment(segment: string): string {
     throw new InvalidMemoryPathError(`Invalid path segment: ${segment}`);
   }
   return trimmed;
+}
+
+/** Returns true when `value` is a safe project / namespace slug. */
+export function isValidProjectNamespace(value: string): boolean {
+  try {
+    normalizeSegment(value);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export function projectRoot(project: string): string {
@@ -35,12 +47,12 @@ export function projectRelativePath(project: string, relativePath: string): stri
   return posix.join(root, normalized);
 }
 
-export function conversationContextPath(project: string): string {
-  return projectRelativePath(project, PROJECT_FILES.conversationContext);
+export function conversationContextPath(): string {
+  return `${SHORT_TERM_ROOT}/${SHORT_TERM_FILES.conversationContext}`;
 }
 
-export function currentTaskPath(project: string): string {
-  return projectRelativePath(project, PROJECT_FILES.currentTask);
+export function currentTaskPath(): string {
+  return `${SHORT_TERM_ROOT}/${SHORT_TERM_FILES.currentTask}`;
 }
 
 export function tasksIndexPath(project: string): string {
@@ -124,4 +136,30 @@ export function manualTestInsomniaPath(featureName: string): string {
 
 export function projectMemoryPrefix(project: string): string {
   return `${projectRoot(project)}/`;
+}
+
+/** Resolve durable namespace: explicit project, else defaultProject. */
+export function resolveProjectNamespace(
+  project: string | undefined,
+  defaultProject?: string,
+): string | undefined {
+  const explicit = project?.trim();
+  if (explicit) {
+    return explicit;
+  }
+  const fallback = defaultProject?.trim();
+  return fallback || undefined;
+}
+
+export function requireProjectNamespace(
+  project: string | undefined,
+  defaultProject?: string,
+): string {
+  const resolved = resolveProjectNamespace(project, defaultProject);
+  if (!resolved) {
+    throw new InvalidMemoryPathError(
+      "project is required (or set defaultProject in plugin settings)",
+    );
+  }
+  return resolved;
 }

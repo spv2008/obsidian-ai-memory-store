@@ -22,7 +22,7 @@ describe("memoryStartTask", () => {
         "|---|---|---|---|---|---|",
         "",
       ].join("\n"),
-      "memory/projects/demo/short-term/current-task.md": EMPTY_CURRENT_TASK,
+      "memory/short-term/current-task.md": EMPTY_CURRENT_TASK,
     });
 
     const result = await memoryStartTask(writer, {
@@ -82,7 +82,7 @@ describe("memoryArchiveTask", () => {
     expect(archived).toContain("status: done");
     expect(archived).toContain("Implement memory read tools");
     const current = await writer.read(
-      "memory/projects/demo/short-term/current-task.md",
+      "memory/short-term/current-task.md",
     );
     expect(isCurrentTaskEmpty(current)).toBe(true);
     const index = await writer.read(result.registerPath);
@@ -185,7 +185,7 @@ describe("task lifecycle integration", () => {
         "|---|---|---|---|---|---|",
         "",
       ].join("\n"),
-      "memory/projects/demo/short-term/current-task.md": EMPTY_CURRENT_TASK,
+      "memory/short-term/current-task.md": EMPTY_CURRENT_TASK,
     });
 
     await memoryStartTask(writer, {

@@ -45,6 +45,8 @@ export interface LocalRestApiSettings {
   bindingHost?: string;
   subjectAltNames?: string;
   enableVerboseLogging?: boolean;
+  /** Durable namespace when tools omit `project`. */
+  defaultProject?: string;
 }
 
 declare module "obsidian" {

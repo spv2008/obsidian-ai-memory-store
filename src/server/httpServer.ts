@@ -20,6 +20,10 @@ import {
   createMcpAuthMiddleware,
   requestIsAuthenticated,
 } from "./auth";
+import {
+  formatSessionContextMarkdown,
+  memorySessionContext,
+} from "../memory/sessionContext";
 
 export default class HttpServer {
   readonly api: express.Express;
@@ -29,10 +33,13 @@ export default class HttpServer {
     app: App,
     private readonly manifest: PluginManifest,
     private readonly settings: LocalRestApiSettings,
+    options: { vault?: import("../memory/vaultWriter").MemoryVaultWriter } = {},
   ) {
     this.api = express();
     this.api.set("json spaces", 2);
-    this.mcpHandler = new McpHandler(app, this.manifest, this.settings);
+    this.mcpHandler = new McpHandler(app, this.manifest, this.settings, {
+      vault: options.vault,
+    });
   }
 
   setupRouter(): void {
@@ -57,6 +64,13 @@ export default class HttpServer {
 
     this.api.get("/", (req, res) => this.root(req, res));
     this.api.get(`/${CERT_NAME}`, (req, res) => this.certificateGet(req, res));
+
+    const memoryRouter = express.Router();
+    memoryRouter.use(createMcpAuthMiddleware(this.settings));
+    memoryRouter.get("/session-context", (req, res, next) => {
+      void this.sessionContextGet(req, res).catch(next);
+    });
+    this.api.use("/memory", memoryRouter);
 
     const mcpRouter = express.Router();
     mcpRouter.use(
@@ -108,6 +122,32 @@ export default class HttpServer {
     );
   }
 
+  private async sessionContextGet(
+    req: express.Request,
+    res: express.Response,
+  ): Promise<void> {
+    const project =
+      typeof req.query.project === "string" ? req.query.project : undefined;
+    const excerptRaw =
+      typeof req.query.excerptLength === "string"
+        ? Number.parseInt(req.query.excerptLength, 10)
+        : undefined;
+    const excerptLength =
+      excerptRaw !== undefined && Number.isFinite(excerptRaw)
+        ? excerptRaw
+        : undefined;
+
+    const result = await memorySessionContext(this.mcpHandler.getVault(), {
+      project,
+      defaultProject: this.settings.defaultProject,
+      excerptLength,
+    });
+    res.status(200).json({
+      ...result,
+      markdown: formatSessionContextMarkdown(result),
+    });
+  }
+
   private root(req: express.Request, res: express.Response): void {
     let certificate: forge.pki.Certificate | undefined;
     try {
@@ -127,6 +167,11 @@ export default class HttpServer {
       },
       service: SERVICE_NAME,
       authenticated: requestIsAuthenticated(req, this.settings),
+      routes: {
+        mcp: "/mcp/",
+        sessionContext: "/memory/session-context",
+        certificate: `/${CERT_NAME}`,
+      },
       certificateInfo:
         requestIsAuthenticated(req, this.settings) && certificate
           ? {

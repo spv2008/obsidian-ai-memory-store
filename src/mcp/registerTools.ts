@@ -22,9 +22,15 @@ import {
   type ArchiveTaskInput,
   type StartTaskInput,
 } from "../memory/tasks";
+import {
+  formatSessionContextMarkdown,
+  memorySessionContext,
+  type SessionContextInput,
+} from "../memory/sessionContext";
 import { memoryUpsert, type UpsertInput } from "../memory/upsert";
 import { vaultRead, type VaultReadInput } from "../memory/vaultRead";
 import { memoryGetWorkflow, type WorkflowInput } from "../memory/workflow";
+import { requireProjectNamespace } from "../memory/paths";
 import type { MemoryVaultWriter } from "../memory/vaultWriter";
 import { SERVICE_NAME } from "../constants";
 import { textResult } from "./textResult";
@@ -55,6 +61,8 @@ export interface ToolRegistrar {
 export interface MemoryToolDeps {
   vault: MemoryVaultWriter;
   manifest: PluginManifest;
+  /** Read at invocation time so settings changes apply without restart. */
+  getDefaultProject?: () => string | undefined;
 }
 
 export function registerMemoryTools(
@@ -76,9 +84,9 @@ export function registerMemoryTools(
 
   register.tool(
     "memory_bootstrap",
-    "Load project memory bundle for session start, including registers, latest daily log, and linked active-work excerpts.",
+    "Refresh or debug: full project snapshot including registers. Prefer memory_session_context or the session hook for normal session start.",
     {
-      project: z.string().describe("Project slug under memory/projects/"),
+      project: z.string().describe("Durable namespace under memory/projects/"),
       taskId: z.string().optional().describe("Optional task id context"),
       excerptLength: z
         .number()
@@ -95,10 +103,35 @@ export function registerMemoryTools(
   );
 
   register.tool(
-    "memory_recall",
-    "Ranked excerpt-only retrieval across project memory and artifact sources.",
+    "memory_session_context",
+    "Slim session baseline from global short-term desk: conversation, current task, linked artifacts, and optional latest daily for a namespace.",
     {
-      project: z.string().describe("Project slug under memory/projects/"),
+      project: z
+        .string()
+        .optional()
+        .describe(
+          "Durable namespace for latest daily; defaults to plugin defaultProject",
+        ),
+      excerptLength: z.number().optional(),
+    },
+    async (args) => {
+      const input = args as SessionContextInput;
+      const result = await memorySessionContext(deps.vault, {
+        ...input,
+        defaultProject: deps.getDefaultProject?.(),
+      });
+      return textResult({
+        ...result,
+        markdown: formatSessionContextMarkdown(result),
+      });
+    },
+  );
+
+  register.tool(
+    "memory_recall",
+    "Ranked excerpt-only retrieval. Use for decisions and tasks by keyword/area — do not read indexes directly.",
+    {
+      project: z.string().describe("Durable namespace under memory/projects/"),
       area: z.string().optional().describe("Code area to prioritize"),
       files: z
         .array(z.string())
@@ -132,7 +165,7 @@ export function registerMemoryTools(
 
   register.tool(
     "memory_get_workflow",
-    "Resolve a task id to its spec, architecture, plan, manual-test artifacts, and related decisions.",
+    "Resolve a task id to its spec, architecture, plan, manual-test artifacts, and related decisions. Use when resuming or deep-diving a task.",
     {
       taskId: z.string().describe("Task id prefix for artifact folders"),
       project: z
@@ -155,12 +188,17 @@ export function registerMemoryTools(
 
   register.tool(
     "memory_upsert",
-    "Create or update a project memory file, section, or append content with optional section dedupe.",
+    "Create or update a project memory file, or global short-term desk files when shortTerm is true.",
     {
-      project: z.string().describe("Project slug under memory/projects/"),
+      project: z
+        .string()
+        .optional()
+        .describe("Durable namespace; required unless shortTerm is true"),
       relativePath: z
         .string()
-        .describe("Path relative to the project root"),
+        .describe(
+          "Path relative to the project root, or current-task.md / conversation.context.md when shortTerm",
+        ),
       mode: z
         .enum([
           "replace_file",
@@ -182,6 +220,10 @@ export function registerMemoryTools(
         .string()
         .optional()
         .describe("Section heading used to replace an existing section"),
+      shortTerm: z
+        .boolean()
+        .optional()
+        .describe("Write under memory/short-term/ instead of a project"),
     },
     async (args) => {
       const result = await memoryUpsert(deps.vault, args as UpsertInput);
@@ -291,9 +333,12 @@ export function registerMemoryTools(
 
   register.tool(
     "memory_start_task",
-    "Park the active task when needed, write current-task.md, and append an active register row.",
+    "Park the active task when needed, write global short-term current-task.md, and append an active register row under the project namespace.",
     {
-      project: z.string(),
+      project: z
+        .string()
+        .optional()
+        .describe("Durable namespace for the register; defaults to defaultProject"),
       name: z.string(),
       goal: z.string(),
       taskId: z.string().optional(),
@@ -303,19 +348,23 @@ export function registerMemoryTools(
       parkCurrentIfActive: z.boolean().optional(),
     },
     async (args) => {
-      const result = await memoryStartTask(
-        deps.vault,
-        args as StartTaskInput,
-      );
+      const raw = args as StartTaskInput & { project?: string };
+      const result = await memoryStartTask(deps.vault, {
+        ...raw,
+        project: requireProjectNamespace(raw.project, deps.getDefaultProject?.()),
+      });
       return textResult(result);
     },
   );
 
   register.tool(
     "memory_archive_task",
-    "Archive current-task.md to tasks/, update the register row, and clear the current task.",
+    "Archive global short-term current-task.md to the project tasks folder, update the register row, and clear the current task.",
     {
-      project: z.string(),
+      project: z
+        .string()
+        .optional()
+        .describe("Durable namespace for the register; defaults to defaultProject"),
       status: z.enum(["parked", "done", "abandoned"]),
       slug: z.string(),
       resumeNotes: z.string().optional(),
@@ -323,10 +372,11 @@ export function registerMemoryTools(
       taskId: z.string().optional(),
     },
     async (args) => {
-      const result = await memoryArchiveTask(
-        deps.vault,
-        args as ArchiveTaskInput,
-      );
+      const raw = args as ArchiveTaskInput & { project?: string };
+      const result = await memoryArchiveTask(deps.vault, {
+        ...raw,
+        project: requireProjectNamespace(raw.project, deps.getDefaultProject?.()),
+      });
       return textResult(result);
     },
   );
@@ -346,7 +396,7 @@ export function registerMemoryTools(
 
   register.tool(
     "memory_find",
-    "Scoped keyword search under project memory and artifact roots with excerpt-only hits.",
+    "Scoped keyword search under project memory and artifact roots with excerpt-only hits (fallback when recall filters are too narrow).",
     {
       project: z.string(),
       query: z.string(),

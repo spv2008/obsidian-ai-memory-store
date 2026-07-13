@@ -1,0 +1,14 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "pwsh -NoProfile -File \"$HOME/.config/obsidian-ai-memory-store/memory-session-hook.ps1\""
+          }
+        ]
+      }
+    ]
+  }
+}

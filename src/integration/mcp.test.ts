@@ -44,6 +44,7 @@ describe("MCP memory tools", () => {
       expect.arrayContaining([
         "memory_status",
         "memory_bootstrap",
+        "memory_session_context",
         "memory_recall",
         "memory_get_workflow",
         "memory_upsert",
@@ -58,6 +59,7 @@ describe("MCP memory tools", () => {
         "vault_read",
       ]),
     );
+    expect(tools.tools.map((t) => t.name)).toHaveLength(15);
   });
 
   test("memory_status returns ok", async () => {
