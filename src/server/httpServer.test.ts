@@ -5,6 +5,8 @@ import { App } from "obsidian";
 import HttpServer from "./httpServer";
 import { CERT_NAME, SERVICE_NAME } from "../constants";
 import { DEFAULT_SETTINGS } from "../constants";
+import { MapVaultWriter } from "../memory/vaultWriter";
+import { loadFixtureVault } from "../memory/fixtureLoader";
 
 const TEST_MANIFEST = {
   id: "obsidian-ai-memory-store",
@@ -86,6 +88,30 @@ describe("HttpServer", () => {
   test("GET /memory/session-context requires authentication", async () => {
     const res = await invoke(server.api, "GET", "/memory/session-context");
     expect(res.status).toBe(401);
+  });
+
+  test("GET /memory/session-context returns session payload when authenticated", async () => {
+    const vault = new MapVaultWriter(loadFixtureVault("demo"));
+    const authServer = new HttpServer({} as App, TEST_MANIFEST, TEST_SETTINGS, {
+      vault,
+    });
+    authServer.setupRouter();
+
+    const res = await invoke(authServer.api, "GET", "/memory/session-context", {
+      Authorization: "Bearer test-api-key",
+    });
+    expect(res.status).toBe(200);
+    const body = JSON.parse(res.body) as {
+      markdown: string;
+      conversation: unknown;
+      currentTask: unknown;
+    };
+    expect(typeof body.markdown).toBe("string");
+    expect(body.markdown.length).toBeGreaterThan(0);
+    expect(body).toHaveProperty("conversationContext");
+    expect(body).toHaveProperty("currentTask");
+    expect(body.conversationContext).toContain("Conversation Context");
+    expect(body.currentTask).toContain("Current Task");
   });
 });
 

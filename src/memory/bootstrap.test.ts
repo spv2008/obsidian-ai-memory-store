@@ -25,13 +25,19 @@ describe("memoryBootstrap", () => {
   });
 
   test("flags decisions older than six months for review", async () => {
-    const result = await memoryBootstrap(demoVault, { project: "demo" });
-    expect(result.needsReviewDecisions.map((d) => d.decision)).toContain(
-      "Legacy auth flow",
-    );
-    expect(result.needsReviewDecisions.map((d) => d.decision)).not.toContain(
-      "Use excerpt-only recall",
-    );
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date("2026-07-06T12:00:00Z"));
+    try {
+      const result = await memoryBootstrap(demoVault, { project: "demo" });
+      expect(result.needsReviewDecisions.map((d) => d.decision)).toContain(
+        "Legacy auth flow",
+      );
+      expect(result.needsReviewDecisions.map((d) => d.decision)).not.toContain(
+        "Use excerpt-only recall",
+      );
+    } finally {
+      jest.useRealTimers();
+    }
   });
 
   test("caps register indexes and latest daily to excerptLength", async () => {

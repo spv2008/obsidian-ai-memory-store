@@ -61,7 +61,8 @@ export interface ToolRegistrar {
 export interface MemoryToolDeps {
   vault: MemoryVaultWriter;
   manifest: PluginManifest;
-  defaultProject?: string;
+  /** Read at invocation time so settings changes apply without restart. */
+  getDefaultProject?: () => string | undefined;
 }
 
 export function registerMemoryTools(
@@ -117,7 +118,7 @@ export function registerMemoryTools(
       const input = args as SessionContextInput;
       const result = await memorySessionContext(deps.vault, {
         ...input,
-        defaultProject: deps.defaultProject,
+        defaultProject: deps.getDefaultProject?.(),
       });
       return textResult({
         ...result,
@@ -350,7 +351,7 @@ export function registerMemoryTools(
       const raw = args as StartTaskInput & { project?: string };
       const result = await memoryStartTask(deps.vault, {
         ...raw,
-        project: requireProjectNamespace(raw.project, deps.defaultProject),
+        project: requireProjectNamespace(raw.project, deps.getDefaultProject?.()),
       });
       return textResult(result);
     },
@@ -374,7 +375,7 @@ export function registerMemoryTools(
       const raw = args as ArchiveTaskInput & { project?: string };
       const result = await memoryArchiveTask(deps.vault, {
         ...raw,
-        project: requireProjectNamespace(raw.project, deps.defaultProject),
+        project: requireProjectNamespace(raw.project, deps.getDefaultProject?.()),
       });
       return textResult(result);
     },

@@ -65,7 +65,7 @@ export class McpHandler {
       {
         vault: this.vault,
         manifest: this.manifest,
-        defaultProject: this.settings.defaultProject,
+        getDefaultProject: () => this.settings.defaultProject,
       },
     );
   }

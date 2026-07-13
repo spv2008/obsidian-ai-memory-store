@@ -19,6 +19,7 @@ import {
 } from "./utils";
 import { PluginManifest } from "obsidian";
 import { configureHttpServerTimeouts } from "./serverTimeouts";
+import { isValidProjectNamespace } from "./memory/paths";
 
 export default class AiMemoryStorePlugin extends Plugin {
   settings: LocalRestApiSettings;
@@ -523,11 +524,18 @@ class AiMemoryStoreSettingTab extends PluginSettingTab {
       .addText((cb) => {
         cb.onChange((value) => {
           const trimmed = value.trim();
-          if (trimmed) {
-            this.plugin.settings.defaultProject = trimmed;
-          } else {
+          if (!trimmed) {
             delete this.plugin.settings.defaultProject;
+            void this.plugin.saveSettings();
+            return;
           }
+          if (!isValidProjectNamespace(trimmed)) {
+            new Notice(
+              "Default project must be a single path segment (no '..', leading '/', or empty).",
+            );
+            return;
+          }
+          this.plugin.settings.defaultProject = trimmed;
           void this.plugin.saveSettings();
         }).setValue(this.plugin.settings.defaultProject ?? "");
       });

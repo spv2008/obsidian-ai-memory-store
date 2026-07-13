@@ -21,6 +21,16 @@ function normalizeSegment(segment: string): string {
   return trimmed;
 }
 
+/** Returns true when `value` is a safe project / namespace slug. */
+export function isValidProjectNamespace(value: string): boolean {
+  try {
+    normalizeSegment(value);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function projectRoot(project: string): string {
   return `${MEMORY_ROOT}/${normalizeSegment(project)}`;
 }
